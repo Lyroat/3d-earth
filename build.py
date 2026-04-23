@@ -41,8 +41,13 @@ with open('world_volcanoes.json','r',encoding='utf-8') as f:
 volcanoes = []
 for v in raw_v:
     sc = STATUS_MAP.get(v.get('status',''),'u')
-    volcanoes.append([round(v['lon'],2),round(v['lat'],2),v['name'],v.get('name_cn','') or v['name'],
-        v.get('type',''),v.get('type_cn','') or v.get('type',''),sc,v.get('country',''),v.get('elevation',0)])
+    volcanoes.append([
+        round(v['lon'],2), round(v['lat'],2),
+        v['name'], v.get('name_cn','') or v['name'],
+        v.get('type',''), v.get('type_cn','') or v.get('type',''),
+        sc, v.get('status',''), v.get('status_en',''),
+        v.get('region',''), v.get('last_eruption',''), v.get('last_eruption_cn','')
+    ])
 volcanoes_json = json.dumps(volcanoes, ensure_ascii=False, separators=(',',':'))
 
 # ── 4. Plate polygon data for split feature ──
@@ -424,11 +429,11 @@ volcanoGroup.rotation.x = TILT;
 scene.add(volcanoGroup);
 const volcanoSprites = [];
 const vCounts = {a:0,d:0,e:0,u:0};
-V_DATA.forEach(([lon,lat,name,nameCn,type,typeCn,sc,country,elev])=>{
+V_DATA.forEach(([lon,lat,name,nameCn,type,typeCn,sc,statusCn,statusEn,region,lastErupt,lastEruptCn])=>{
   vCounts[sc]=(vCounts[sc]||0)+1;
   const sp=makeVSprite(VCOLORS[sc]||VCOLORS.u);
   sp.position.copy(lngLatToVec3(lon,lat,VOLCANO_R));
-  sp.userData={name,nameCn,type,typeCn,sc,country,elev,lon,lat};
+  sp.userData={name,nameCn,type,typeCn,sc,statusCn,statusEn,region,lastErupt,lastEruptCn,lon,lat};
   volcanoGroup.add(sp);volcanoSprites.push(sp);
 });
 
@@ -617,12 +622,14 @@ function screenPos(sp){const v=sp.position.clone();v.applyMatrix4(volcanoGroup.m
 
 function tipHTML(d){
   const dc=VCOLORS[d.sc]||VCOLORS.u;
-  return `<div class="tip-name-cn">${d.nameCn}</div><div class="tip-name-en">${d.name}</div><div class="tip-sep"></div>
-<div class="tip-row"><span class="tip-label">类型</span><span class="tip-val">${d.typeCn}</span></div>
-<div class="tip-row"><span class="tip-label"></span><span class="tip-en">${d.type}</span></div>
-<div class="tip-row"><span class="tip-label">状态</span><span class="tip-val" style="color:${dc}">${STATUS_CN[d.sc]||''}</span></div>
-<div class="tip-row"><span class="tip-label"></span><span class="tip-en">${STATUS_EN[d.sc]||''}</span></div>
-<div class="tip-sep"></div><div class="tip-row"><span class="tip-label">位置</span><span class="tip-val">${d.country}${d.elev?' · '+d.elev.toLocaleString()+'m':''}</span></div>`;
+  const nameLine = d.nameCn && d.nameCn!==d.name
+    ? `<div class="tip-name-cn">${d.nameCn}</div><div class="tip-name-en">${d.name}</div>`
+    : `<div class="tip-name-cn">${d.name}</div>`;
+  return `${nameLine}<div class="tip-sep"></div>
+<div class="tip-row"><span class="tip-label">类型</span><span class="tip-val">${d.typeCn}（${d.type}）</span></div>
+<div class="tip-row"><span class="tip-label">活跃度</span><span class="tip-val" style="color:${dc}">${d.statusCn}（${d.statusEn}）</span></div>
+<div class="tip-row"><span class="tip-label">位置</span><span class="tip-val">${d.region}</span></div>
+<div class="tip-row"><span class="tip-label">上次喷发</span><span class="tip-val">${d.lastEruptCn||'未知'}</span></div>`;
 }
 function posEl(el,x,y){el.style.display='block';el.style.transform='';requestAnimationFrame(()=>{const r=el.getBoundingClientRect();let l=x+16,t=y-12;if(l+r.width>innerWidth-16)l=x-r.width-16;if(t+r.height>innerHeight-16)t=innerHeight-r.height-16;if(t<16)t=16;el.style.left=l+'px';el.style.top=t+'px';});}
 
@@ -630,7 +637,8 @@ function buildCluster(items,mx,my){
   clusterData=items;
   let h=`<div class="cl-title">📍 区域内火山（${items.length}个）</div>`;
   items.forEach((d,i)=>{const dc=VCOLORS[d.sc]||VCOLORS.u;
-    h+=`<div class="cl-item" data-idx="${i}"><div class="cl-dot" style="background:${dc};box-shadow:0 0 3px ${dc}"></div><div><div class="cl-name">${d.nameCn} <small>${d.name}</small></div><div class="cl-sub">${d.typeCn} · ${STATUS_CN[d.sc]||''} · ${d.country}</div></div></div>`;
+    const cn=d.nameCn&&d.nameCn!==d.name?d.nameCn+' ':''
+    h+=`<div class="cl-item" data-idx="${i}"><div class="cl-dot" style="background:${dc};box-shadow:0 0 3px ${dc}"></div><div><div class="cl-name">${cn}<small>${d.name}</small></div><div class="cl-sub">${d.typeCn} · ${d.statusCn}</div></div></div>`;
   });
   h+=`<div id="cl-detail"></div>`;
   clusterEl.innerHTML=h;posEl(clusterEl,mx,my);
@@ -639,10 +647,12 @@ function buildCluster(items,mx,my){
     item.addEventListener('mouseenter',()=>{
       const d=clusterData[parseInt(item.dataset.idx)];if(!d)return;
       const det=document.getElementById('cl-detail');const dc=VCOLORS[d.sc]||VCOLORS.u;
-      det.innerHTML=`<div class="tip-name-cn">${d.nameCn}</div><div class="tip-name-en">${d.name}</div><div class="tip-sep"></div>
-<div class="tip-row"><span class="tip-label">类型</span><span class="tip-val">${d.typeCn}</span> <span class="tip-en">${d.type}</span></div>
-<div class="tip-row"><span class="tip-label">状态</span><span class="tip-val" style="color:${dc}">${STATUS_CN[d.sc]||''}</span> <span class="tip-en">${STATUS_EN[d.sc]||''}</span></div>
-<div class="tip-row"><span class="tip-label">位置</span><span class="tip-val">${d.country}${d.elev?' · '+d.elev.toLocaleString()+'m':''}</span></div>`;
+      const nm = d.nameCn&&d.nameCn!==d.name?`<div class="tip-name-cn">${d.nameCn}</div><div class="tip-name-en">${d.name}</div>`:`<div class="tip-name-cn">${d.name}</div>`;
+      det.innerHTML=`${nm}<div class="tip-sep"></div>
+<div class="tip-row"><span class="tip-label">类型</span><span class="tip-val">${d.typeCn}（${d.type}）</span></div>
+<div class="tip-row"><span class="tip-label">活跃度</span><span class="tip-val" style="color:${dc}">${d.statusCn}（${d.statusEn}）</span></div>
+<div class="tip-row"><span class="tip-label">位置</span><span class="tip-val">${d.region}</span></div>
+<div class="tip-row"><span class="tip-label">上次喷发</span><span class="tip-val">${d.lastEruptCn||'未知'}</span></div>`;
     });
     item.addEventListener('click',()=>{
       const d=clusterData[parseInt(item.dataset.idx)];if(!d)return;
