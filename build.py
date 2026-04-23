@@ -174,6 +174,17 @@ canvas{display:block}
 #split-btn:hover{background:rgba(100,200,255,.18);color:#fff}
 #split-btn.active{background:rgba(100,200,255,.25);border-color:rgba(100,200,255,.5);color:#fff}
 
+/* ── Search ── */
+#search-row{position:relative}
+#volcano-search{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#fff;font-size:11px;padding:4px 10px;width:220px;outline:none;font-family:inherit}
+#volcano-search:focus{border-color:rgba(77,195,247,.5);background:rgba(255,255,255,.12)}
+#volcano-search::placeholder{color:rgba(255,255,255,.3)}
+#search-results{position:absolute;bottom:100%;left:80px;width:260px;max-height:240px;overflow-y:auto;background:rgba(8,8,18,.92);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:50;padding:4px 0}
+.sr-item{padding:6px 12px;cursor:pointer;font-size:11px;color:rgba(255,255,255,.8);border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center}
+.sr-item:hover{background:rgba(77,195,247,.15);color:#fff}
+.sr-item:last-child{border-bottom:none}
+.sr-name{font-weight:500}.sr-sub{color:rgba(255,255,255,.4);font-size:10px}
+
 /* ── Tooltip ── */
 #tooltip{position:absolute;display:none;background:rgba(8,8,18,.88);backdrop-filter:blur(14px);padding:12px 16px;border-radius:12px;font-size:12px;color:rgba(255,255,255,.92);pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1);z-index:30;line-height:1.7}
 .tip-name-cn{font-size:14px;font-weight:600;margin-bottom:1px}
@@ -212,6 +223,11 @@ canvas{display:block}
   <div class="bp-row" id="volcano-row">
     <span class="row-label">火山筛选</span>
   </div>
+  <div class="bp-row" id="search-row">
+    <span class="row-label">搜索火山</span>
+    <input type="text" id="volcano-search" placeholder="输入火山名称，回车定位..." autocomplete="off" />
+    <div id="search-results"></div>
+  </div>
   <div class="bp-row" id="boundary-row">
     <span class="row-label">板块边界</span>
   </div>
@@ -242,7 +258,7 @@ const BOUNDARY_R = 1.003;
 const VOLCANO_R = 1.025;
 const CLUSTER_PX = 28;
 const BCOLORS = {c:{main:0xff4444,glow:0xff4444},d:{main:0x44ff88,glow:0x44ff88},t:{main:0xffcc33,glow:0xffcc33},u:{main:0x888888,glow:0x888888}};
-const VCOLORS = {a:'#ff3300',d:'#ff9900',e:'#888888',u:'#555555'};
+const VCOLORS = {a:'#ee0000',d:'#ff9900',e:'#888888',u:'#555555'};
 const STATUS_CN = {a:'活火山',d:'休眠火山',e:'死火山',u:'未知'};
 const STATUS_EN = {a:'Active Volcano',d:'Dormant Volcano',e:'Extinct Volcano',u:'Unknown'};
 const TYPE_LABELS = {c:'聚合边界',d:'分离边界',t:'转换断层',u:'未分类'};
@@ -440,7 +456,7 @@ V_DATA.forEach(([lon,lat,name,nameCn,type,typeCn,sc,statusCn,statusEn,region,las
 /* ══════════ Bottom Panel: Volcano Filter ══════════ */
 const vRow=document.getElementById('volcano-row');
 const vFilter={a:true,d:true,e:true,u:true};
-[{s:'a',c:'#ff3300',l:'活火山'},{s:'d',c:'#ff9900',l:'休眠火山'},{s:'e',c:'#888',l:'死火山'}].forEach(o=>{
+[{s:'a',c:'#ee0000',l:'活火山'},{s:'d',c:'#ff9900',l:'休眠火山'},{s:'e',c:'#888',l:'死火山'}].forEach(o=>{
   const btn=document.createElement('div');btn.className='chip';btn.dataset.status=o.s;
   btn.innerHTML=`<span class="cdot" style="background:${o.c};box-shadow:0 0 4px ${o.c}"></span>${o.l} <small>${vCounts[o.s]||0}</small>`;
   btn.addEventListener('click',()=>{
@@ -607,7 +623,95 @@ function restoreView(){
   navAnim={rotY:sv.earthRotY,phi:sph.phi,r:sph.radius,theta:sph.theta};
   controls.enabled=false;
 }
-window.addEventListener('keydown',e=>{if(e.key==='Escape'){restoreView();tooltipEl.style.display='none';clusterEl.style.display='none';}});
+/* ══════════ Select Volcano (hide others) ══════════ */
+let selectedVolcano=null;
+function selectVolcano(sp){
+  selectedVolcano=sp;
+  volcanoSprites.forEach(s=>{if(s!==sp)s.visible=false;});
+  sp.visible=true;
+}
+function deselectVolcano(){
+  if(!selectedVolcano)return;
+  selectedVolcano=null;
+  volcanoSprites.forEach(sp=>{sp.visible=vFilter[sp.userData.sc];});
+}
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    deselectVolcano();restoreView();
+    tooltipEl.style.display='none';clusterEl.style.display='none';
+    document.getElementById('search-results').style.display='none';
+  }
+});
+
+/* ══════════ Double-click Zoom ══════════ */
+renderer.domElement.addEventListener('dblclick',e=>{
+  e.preventDefault();
+  const mx=(e.clientX/innerWidth)*2-1, my=-(e.clientY/innerHeight)*2+1;
+  const rc=new THREE.Raycaster();
+  rc.setFromCamera(new THREE.Vector2(mx,my),camera);
+  const hits=rc.intersectObject(earth);
+  if(hits.length>0){
+    const p=hits[0].point.clone();
+    const sph=new THREE.Spherical().setFromVector3(p.normalize().multiplyScalar(2.0));
+    savedView=savedView||{camPos:camera.position.clone(),earthRotY:earth.rotation.y};
+    navAnim={rotY:earth.rotation.y,phi:sph.phi,r:2.0,theta:sph.theta};
+    autoRotate=false;manualPause=true;pauseBtn.textContent='▶';
+    controls.enabled=false;
+  }
+});
+
+/* ══════════ Click empty to deselect ══════════ */
+renderer.domElement.addEventListener('click',e=>{
+  if(!selectedVolcano)return;
+  const mx=(e.clientX/innerWidth)*2-1, my=-(e.clientY/innerHeight)*2+1;
+  const rc=new THREE.Raycaster();
+  rc.setFromCamera(new THREE.Vector2(mx,my),camera);
+  const vis=volcanoSprites.filter(s=>s.visible);
+  if(rc.intersectObjects(vis).length===0){deselectVolcano();}
+});
+
+/* ══════════ Search Volcano ══════════ */
+const searchInput=document.getElementById('volcano-search');
+const searchResults=document.getElementById('search-results');
+let searchTimeout=null;
+searchInput.addEventListener('input',()=>{
+  clearTimeout(searchTimeout);
+  searchTimeout=setTimeout(()=>{
+    const q=searchInput.value.trim().toLowerCase();
+    if(q.length<1){searchResults.style.display='none';return;}
+    const matches=volcanoSprites.filter(sp=>{
+      const d=sp.userData;
+      return d.name.toLowerCase().includes(q)||d.nameCn.includes(q);
+    }).slice(0,12);
+    if(matches.length===0){searchResults.innerHTML='<div class="sr-item" style="color:rgba(255,255,255,.4)">未找到匹配火山</div>';searchResults.style.display='block';return;}
+    searchResults.innerHTML=matches.map((sp,i)=>{
+      const d=sp.userData;const dc=VCOLORS[d.sc]||VCOLORS.u;
+      return `<div class="sr-item" data-sidx="${i}"><span class="sr-name"><span style="color:${dc}">●</span> ${d.nameCn!==d.name?d.nameCn+' ':''}<small>${d.name}</small></span><span class="sr-sub">${d.statusCn}</span></div>`;
+    }).join('');
+    searchResults.style.display='block';
+    searchResults.querySelectorAll('.sr-item').forEach((el,i)=>{
+      el.addEventListener('click',()=>{
+        const sp=matches[i];if(!sp)return;
+        searchResults.style.display='none';searchInput.value='';
+        selectVolcano(sp);zoomToVolcano(sp.userData);
+      });
+    });
+  },150);
+});
+searchInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const q=searchInput.value.trim().toLowerCase();
+    if(!q)return;
+    const sp=volcanoSprites.find(s=>{
+      const d=s.userData;
+      return d.name.toLowerCase()===q||d.nameCn===q||d.name.toLowerCase().includes(q)||d.nameCn.includes(q);
+    });
+    if(sp){searchResults.style.display='none';searchInput.value='';selectVolcano(sp);zoomToVolcano(sp.userData);}
+  }
+  if(e.key==='Escape'){searchResults.style.display='none';searchInput.blur();}
+});
+searchInput.addEventListener('blur',()=>{setTimeout(()=>{searchResults.style.display='none';},200);});
 
 /* ══════════ Tooltip / Cluster ══════════ */
 const raycaster=new THREE.Raycaster();raycaster.params.Line2={threshold:0.02};
@@ -633,10 +737,11 @@ function tipHTML(d){
 }
 function posEl(el,x,y){el.style.display='block';el.style.transform='';requestAnimationFrame(()=>{const r=el.getBoundingClientRect();let l=x+16,t=y-12;if(l+r.width>innerWidth-16)l=x-r.width-16;if(t+r.height>innerHeight-16)t=innerHeight-r.height-16;if(t<16)t=16;el.style.left=l+'px';el.style.top=t+'px';});}
 
-function buildCluster(items,mx,my){
-  clusterData=items;
-  let h=`<div class="cl-title">📍 区域内火山（${items.length}个）</div>`;
-  items.forEach((d,i)=>{const dc=VCOLORS[d.sc]||VCOLORS.u;
+let clusterSprites=[];
+function buildCluster(sprites,mx,my){
+  clusterSprites=sprites;clusterData=sprites.map(s=>s.userData);
+  let h=`<div class="cl-title">📍 区域内火山（${sprites.length}个）</div>`;
+  clusterData.forEach((d,i)=>{const dc=VCOLORS[d.sc]||VCOLORS.u;
     const cn=d.nameCn&&d.nameCn!==d.name?d.nameCn+' ':''
     h+=`<div class="cl-item" data-idx="${i}"><div class="cl-dot" style="background:${dc};box-shadow:0 0 3px ${dc}"></div><div><div class="cl-name">${cn}<small>${d.name}</small></div><div class="cl-sub">${d.typeCn} · ${d.statusCn}</div></div></div>`;
   });
@@ -655,9 +760,9 @@ function buildCluster(items,mx,my){
 <div class="tip-row"><span class="tip-label">上次喷发</span><span class="tip-val">${d.lastEruptCn||'未知'}</span></div>`;
     });
     item.addEventListener('click',()=>{
-      const d=clusterData[parseInt(item.dataset.idx)];if(!d)return;
+      const sp=clusterSprites[parseInt(item.dataset.idx)];if(!sp)return;
       clusterEl.style.display='none';clusterHovered=false;
-      zoomToVolcano(d);
+      selectVolcano(sp);zoomToVolcano(sp.userData);
     });
   });
 }
@@ -670,7 +775,7 @@ renderer.domElement.addEventListener('pointermove',e=>{
   const vHits=raycaster.intersectObjects(vis);
   if(vHits.length>0){
     const mx=e.clientX,my=e.clientY;
-    const nearby=[];vis.forEach(sp=>{const p=screenPos(sp);if(p.z>1)return;const dx=p.x-mx,dy=p.y-my;if(Math.sqrt(dx*dx+dy*dy)<CLUSTER_PX)nearby.push(sp.userData);});
+    const nearby=[];vis.forEach(sp=>{const p=screenPos(sp);if(p.z>1)return;const dx=p.x-mx,dy=p.y-my;if(Math.sqrt(dx*dx+dy*dy)<CLUSTER_PX)nearby.push(sp);});
     if(nearby.length>1){tooltipEl.style.display='none';buildCluster(nearby,mx,my);document.body.style.cursor='pointer';return;}
     clusterEl.style.display='none';tooltipEl.innerHTML=tipHTML(vHits[0].object.userData);posEl(tooltipEl,mx,my);document.body.style.cursor='pointer';return;
   }
