@@ -398,7 +398,7 @@ for(let lng=-180;lng<180;lng+=15){
   gridGroup.add(new THREE.Line(g,gridMat));
 }
 
-/* ══════════ Cloud Layer (dual-layer with variable opacity) ══════════ */
+/* ══════════ Cloud Layer ══════════ */
 cloudsMat = new THREE.ShaderMaterial({
   vertexShader:`
     varying vec2 vUv;
@@ -411,16 +411,11 @@ cloudsMat = new THREE.ShaderMaterial({
     uniform float uTime;
     varying vec2 vUv;
     void main(){
-      vec2 uv1=vUv+vec2(uTime*0.003,uTime*0.001);
+      vec2 uv1=vUv+vec2(uTime*0.002,uTime*0.0004);
       uv1.x=fract(uv1.x); uv1.y=clamp(uv1.y,0.0,1.0);
-      vec2 uv2=vUv+vec2(-uTime*0.002,uTime*0.0005);
-      uv2.x=fract(uv2.x); uv2.y=clamp(uv2.y,0.0,1.0);
-      vec4 c1=texture2D(uCloud,uv1);
-      vec4 c2=texture2D(uCloud,uv2);
-      float lum1=dot(c1.rgb,vec3(0.299,0.587,0.114));
-      float lum2=dot(c2.rgb,vec3(0.299,0.587,0.114));
-      float lum=max(lum1,lum2*0.6);
-      float alpha=smoothstep(0.15,0.7,lum)*0.55;
+      vec4 c=texture2D(uCloud,uv1);
+      float lum=dot(c.rgb,vec3(0.299,0.587,0.114));
+      float alpha=smoothstep(0.12,0.65,lum)*0.5;
       gl_FragColor=vec4(1.0,1.0,1.0,alpha);
     }`,
   uniforms:{
@@ -934,7 +929,6 @@ function syncRotY(){
   boundaryGroup.rotation.y=earth.rotation.y;
   volcanoGroup.rotation.y=earth.rotation.y;gridGroup.rotation.y=earth.rotation.y;
   splitParent.rotation.y=earth.rotation.y;
-  cloudsMesh.rotation.y=earth.rotation.y;
 }
 
 (function animate(){
