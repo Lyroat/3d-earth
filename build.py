@@ -363,13 +363,14 @@ function mkTex(id){
   const img=document.getElementById(id);
   const t=new THREE.Texture(img);t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;return t;
 }
+let cloudsMat, cloudsMesh;
 function loadAllTex(){
   const ids=['earth-tex','bump-tex','clouds-tex'];
   const all=ids.map(id=>{const img=document.getElementById(id);return img.complete&&img.naturalWidth>0;});
   if(!all.every(Boolean)){setTimeout(loadAllTex,50);return;}
   earthMat.uniforms.uTex.value=mkTex('earth-tex');
   earthMat.uniforms.uBumpTex.value=mkTex('bump-tex');
-  cloudsMat.map=mkTex('clouds-tex');cloudsMat.needsUpdate=true;
+  if(cloudsMat){cloudsMat.map=mkTex('clouds-tex');cloudsMat.needsUpdate=true;}
   document.getElementById('loading').classList.add('hidden');
 }
 loadAllTex();
@@ -405,10 +406,10 @@ const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(1.06,128,128),atmoMat
 atmosphere.rotation.x = TILT;
 scene.add(atmosphere);
 
-const cloudsMat = new THREE.MeshBasicMaterial({
+cloudsMat = new THREE.MeshBasicMaterial({
   transparent:true, opacity:0.35, depthWrite:false, blending:THREE.AdditiveBlending
 });
-const cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.015,128,128),cloudsMat);
+cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.015,128,128),cloudsMat);
 cloudsMesh.rotation.x = TILT;
 scene.add(cloudsMesh);
 const atmoGroup = {glow:atmosphere, clouds:cloudsMesh};
