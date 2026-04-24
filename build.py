@@ -363,14 +363,15 @@ function mkTex(id){
   const img=document.getElementById(id);
   const t=new THREE.Texture(img);t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;return t;
 }
-let cloudsMat, cloudsMesh;
+let cloudsMat, cloudsMesh, cloudTexReady=null;
 function loadAllTex(){
   const ids=['earth-tex','bump-tex','clouds-tex'];
   const all=ids.map(id=>{const img=document.getElementById(id);return img.complete&&img.naturalWidth>0;});
   if(!all.every(Boolean)){setTimeout(loadAllTex,50);return;}
   earthMat.uniforms.uTex.value=mkTex('earth-tex');
   earthMat.uniforms.uBumpTex.value=mkTex('bump-tex');
-  if(cloudsMat){cloudsMat.map=mkTex('clouds-tex');cloudsMat.needsUpdate=true;}
+  cloudTexReady=mkTex('clouds-tex');
+  if(cloudsMat){cloudsMat.map=cloudTexReady;cloudsMat.needsUpdate=true;}
   document.getElementById('loading').classList.add('hidden');
 }
 loadAllTex();
@@ -396,23 +397,14 @@ for(let lng=-180;lng<180;lng+=15){
   gridGroup.add(new THREE.Line(g,gridMat));
 }
 
-/* ══════════ Atmosphere (glow + clouds) ══════════ */
-const atmoMat = new THREE.ShaderMaterial({
-  vertexShader:`varying vec3 vN;varying vec3 vW;void main(){vN=normalize(normalMatrix*normal);vW=(modelMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-  fragmentShader:`varying vec3 vN;varying vec3 vW;uniform vec3 uC;void main(){float g=pow(1.0-dot(normalize(uC-vW),vN),4.5);gl_FragColor=vec4(0.35,0.6,1.0,g*0.45);}`,
-  uniforms:{uC:{value:camera.position}},transparent:true,side:THREE.BackSide,depthWrite:false
-});
-const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(1.06,128,128),atmoMat);
-atmosphere.rotation.x = TILT;
-scene.add(atmosphere);
-
+/* ══════════ Cloud Layer ══════════ */
 cloudsMat = new THREE.MeshBasicMaterial({
   transparent:true, opacity:0.35, depthWrite:false, blending:THREE.AdditiveBlending
 });
+if(cloudTexReady){cloudsMat.map=cloudTexReady;cloudsMat.needsUpdate=true;}
 cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.015,128,128),cloudsMat);
 cloudsMesh.rotation.x = TILT;
 scene.add(cloudsMesh);
-const atmoGroup = {glow:atmosphere, clouds:cloudsMesh};
 
 /* ══════════ Stars ══════════ */
 (function(){
@@ -613,8 +605,8 @@ dGrid.appendChild(terrainBtn);
 const atmoBtn=document.createElement('button');atmoBtn.className='chip active';atmoBtn.textContent='🌤 大气层';
 atmoBtn.addEventListener('click',e=>{
   e.stopPropagation();
-  const vis=!atmosphere.visible;
-  atmosphere.visible=vis;cloudsMesh.visible=vis;
+  const vis=!cloudsMesh.visible;
+  cloudsMesh.visible=vis;
   atmoBtn.classList.toggle('active',vis);
 });
 dGrid.appendChild(atmoBtn);
@@ -911,7 +903,7 @@ window.addEventListener('resize',()=>{
 
 /* ══════════ Animate ══════════ */
 function syncRotY(){
-  atmosphere.rotation.y=earth.rotation.y;boundaryGroup.rotation.y=earth.rotation.y;
+  boundaryGroup.rotation.y=earth.rotation.y;
   volcanoGroup.rotation.y=earth.rotation.y;gridGroup.rotation.y=earth.rotation.y;
   splitParent.rotation.y=earth.rotation.y;
   cloudsMesh.rotation.y=earth.rotation.y+0.05;
@@ -954,7 +946,6 @@ function syncRotY(){
   volcanoSprites.forEach((sp,i)=>{if(sp.visible)sp.material.opacity=0.72+0.28*Math.sin(t*2.5+i*0.6);});
 
   earthMat.uniforms.uCam.value.copy(camera.position);
-  atmoMat.uniforms.uC.value.copy(camera.position);
   renderer.render(scene,camera);
 })();
 </script>
