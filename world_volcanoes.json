@@ -916,7 +916,7 @@
   },
   {
     "name": "Apaneca Range",
-    "name_cn": "Apaneca山脉火山",
+    "name_cn": "阿帕内卡山脉火山",
     "type": "Stratovolcano(es)",
     "type_cn": "层状火山",
     "status": "休眠火山",
@@ -1351,7 +1351,7 @@
   },
   {
     "name": "Atuel, Caldera del",
-    "name_cn": "阿特乌埃尔卡尔德拉火山",
+    "name_cn": "阿图埃尔破火山口",
     "type": "Caldera",
     "type_cn": "破火山口",
     "status": "休眠火山",
@@ -1471,7 +1471,7 @@
   },
   {
     "name": "Azas Plateau",
-    "name_cn": "阿兹阿斯普拉特奥火山",
+    "name_cn": "阿扎斯高原火山",
     "type": "Volcanic field",
     "type_cn": "火山区",
     "status": "休眠火山",
@@ -1981,7 +1981,7 @@
   },
   {
     "name": "Behm Canal-Rudyerd Bay",
-    "name_cn": "贝坎阿尔鲁耶贝火山",
+    "name_cn": "贝姆运河-鲁迪尔德湾火山",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "死火山",
@@ -2116,7 +2116,7 @@
   },
   {
     "name": "Bilate River Field",
-    "name_cn": "Bilate River火山区",
+    "name_cn": "比拉特河火山区",
     "type": "Maar(s)",
     "type_cn": "低平火山口",
     "status": "休眠火山",
@@ -2206,7 +2206,7 @@
   },
   {
     "name": "Black Butte Crater Lava Field",
-    "name_cn": "Black Butte  Lava Field火山口火山",
+    "name_cn": "黑比尤特火山口熔岩区",
     "type": "Shield",
     "type_cn": "盾状火山",
     "status": "休眠火山",
@@ -3166,7 +3166,7 @@
   },
   {
     "name": "Central Bismarck Sea",
-    "name_cn": "塞特拉比马尔塞阿火山",
+    "name_cn": "中俾斯麦海海底火山",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "活火山",
@@ -3346,7 +3346,7 @@
   },
   {
     "name": "Cherpuk Group",
-    "name_cn": "切普群火山",
+    "name_cn": "切尔普克火山群",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -3736,7 +3736,7 @@
   },
   {
     "name": "Coatepeque Caldera",
-    "name_cn": "科阿特埃普埃克卡尔德拉火山",
+    "name_cn": "科阿特佩克破火山口",
     "type": "Caldera",
     "type_cn": "破火山口",
     "status": "休眠火山",
@@ -3946,7 +3946,7 @@
   },
   {
     "name": "Corbetti Caldera",
-    "name_cn": "科尔贝蒂卡尔德拉火山",
+    "name_cn": "科尔贝蒂破火山口",
     "type": "Caldera",
     "type_cn": "破火山口",
     "status": "休眠火山",
@@ -4096,7 +4096,7 @@
   },
   {
     "name": "Crater Basalt Volcanic Field",
-    "name_cn": "Crater Basalt火山区",
+    "name_cn": "火山口玄武岩火山区",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -4456,7 +4456,7 @@
   },
   {
     "name": "Dawson Strait Group",
-    "name_cn": "达松斯特艾群火山",
+    "name_cn": "道森海峡火山群",
     "type": "Volcanic field",
     "type_cn": "火山区",
     "status": "休眠火山",
@@ -4681,7 +4681,7 @@
   },
   {
     "name": "Don Joao de Castro Bank",
-    "name_cn": "顿约阿奥卡斯特罗班火山",
+    "name_cn": "唐若昂·德卡斯特罗浅滩",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "活火山",
@@ -4861,7 +4861,7 @@
   },
   {
     "name": "East Blanco Depression",
-    "name_cn": "埃阿斯兰科德普雷西翁火山",
+    "name_cn": "东布兰科凹地",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "休眠火山",
@@ -4876,7 +4876,7 @@
   },
   {
     "name": "East Chamo Basin",
-    "name_cn": "埃阿斯查莫巴斯因火山",
+    "name_cn": "东查莫盆地",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -4906,7 +4906,7 @@
   },
   {
     "name": "East Gakkel Ridge at 85°E",
-    "name_cn": "东Gakkel岭火山",
+    "name_cn": "东加克尔海岭(85°E)",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "休眠火山",
@@ -4921,7 +4921,7 @@
   },
   {
     "name": "East Ziway",
-    "name_cn": "埃阿斯齐瓦火山",
+    "name_cn": "东齐瓦伊火山",
     "type": "Fissure vent(s)",
     "type_cn": "裂隙喷口",
     "status": "休眠火山",
@@ -5311,7 +5311,7 @@
   },
   {
     "name": "Esmeralda Bank",
-    "name_cn": "埃斯梅尔阿尔达班火山",
+    "name_cn": "埃斯梅拉达浅滩",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "休眠火山",
@@ -6121,7 +6121,7 @@
   },
   {
     "name": "Ghegham Volcanic Ridge",
-    "name_cn": "Ghegham火山岭火山",
+    "name_cn": "格加姆火山岭",
     "type": "Volcanic field",
     "type_cn": "火山区",
     "status": "休眠火山",
@@ -7081,7 +7081,7 @@
   },
   {
     "name": "Hollister Ridge",
-    "name_cn": "Hollister岭火山",
+    "name_cn": "霍利斯特海岭",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "死火山",
@@ -7231,7 +7231,7 @@
   },
   {
     "name": "Huanquihue Group",
-    "name_cn": "胡安基胡埃群火山",
+    "name_cn": "瓦恩基韦火山群",
     "type": "Stratovolcano(es)",
     "type_cn": "层状火山",
     "status": "休眠火山",
@@ -7396,7 +7396,7 @@
   },
   {
     "name": "Hydrographers Range",
-    "name_cn": "Hydrographers山脉火山",
+    "name_cn": "海道测量山脉火山",
     "type": "Stratovolcano",
     "type_cn": "层状火山",
     "status": "休眠火山",
@@ -7651,7 +7651,7 @@
   },
   {
     "name": "Imuruk Lake",
-    "name_cn": "伊姆乌尔乌克湖火山",
+    "name_cn": "伊穆鲁克湖火山",
     "type": "Shield(s)",
     "type_cn": "盾状火山",
     "status": "休眠火山",
@@ -7711,7 +7711,7 @@
   },
   {
     "name": "Ingakslugwat Hills",
-    "name_cn": "英阿克卢瓦希尔火山",
+    "name_cn": "因加克斯卢格瓦特山丘火山",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -7921,7 +7921,7 @@
   },
   {
     "name": "Iskut-Unuk River Cones",
-    "name_cn": "Iskut-Unuk River锥火山",
+    "name_cn": "伊斯库特-乌努克河锥火山",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "活火山",
@@ -7981,7 +7981,7 @@
   },
   {
     "name": "Ivao Group",
-    "name_cn": "伊夫阿奥群火山",
+    "name_cn": "伊瓦奥火山群",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -8416,7 +8416,7 @@
   },
   {
     "name": "Kaikohe-Bay of Islands",
-    "name_cn": "卡伊克奥赫贝奥夫岛火山",
+    "name_cn": "凯科赫-群岛湾火山",
     "type": "Volcanic field",
     "type_cn": "火山区",
     "status": "休眠火山",
@@ -9301,7 +9301,7 @@
   },
   {
     "name": "Kolbeinsey Ridge",
-    "name_cn": "Kolbeinsey岭火山",
+    "name_cn": "科尔拜恩塞海岭",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "活火山",
@@ -9316,7 +9316,7 @@
   },
   {
     "name": "Kolokol Group",
-    "name_cn": "科尔奥克奥尔群火山",
+    "name_cn": "科洛科尔火山群",
     "type": "Stratovolcano",
     "type_cn": "层状火山",
     "status": "活火山",
@@ -9376,7 +9376,7 @@
   },
   {
     "name": "Korath Range",
-    "name_cn": "Korath山脉火山",
+    "name_cn": "科拉特山脉火山",
     "type": "Tuff cone(s)",
     "type_cn": "凝灰锥",
     "status": "死火山",
@@ -9991,7 +9991,7 @@
   },
   {
     "name": "Laguna Caldera",
-    "name_cn": "拉贡阿卡尔德拉火山",
+    "name_cn": "拉古纳破火山口",
     "type": "Caldera",
     "type_cn": "破火山口",
     "status": "休眠火山",
@@ -10231,7 +10231,7 @@
   },
   {
     "name": "Leonard Range",
-    "name_cn": "Leonard山脉火山",
+    "name_cn": "伦纳德山脉火山",
     "type": "Stratovolcano",
     "type_cn": "层状火山",
     "status": "休眠火山",
@@ -11041,7 +11041,7 @@
   },
   {
     "name": "Managlase Plateau",
-    "name_cn": "曼阿格拉斯埃普拉特奥火山",
+    "name_cn": "马纳格拉塞高原火山",
     "type": "Volcanic field",
     "type_cn": "火山区",
     "status": "休眠火山",
@@ -11281,7 +11281,7 @@
   },
   {
     "name": "Markagunt Plateau",
-    "name_cn": "马尔卡贡普拉特奥火山",
+    "name_cn": "马卡冈特高原火山",
     "type": "Volcanic field",
     "type_cn": "火山区",
     "status": "休眠火山",
@@ -11956,7 +11956,7 @@
   },
   {
     "name": "Milbanke Sound Group",
-    "name_cn": "米尔班克索温群火山",
+    "name_cn": "米尔班克海峡火山群",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -12181,7 +12181,7 @@
   },
   {
     "name": "Monaco Bank",
-    "name_cn": "摩纳哥浅滩海底火山",
+    "name_cn": "摩纳哥浅滩",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "活火山",
@@ -12196,7 +12196,7 @@
   },
   {
     "name": "Mono Lake Volcanic Field",
-    "name_cn": "Mono Lake火山区",
+    "name_cn": "莫诺湖火山区",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -12631,7 +12631,7 @@
   },
   {
     "name": "NE Shepherd Islands",
-    "name_cn": "东北牧羊人群岛火山",
+    "name_cn": "东北谢泼德群岛火山",
     "type": "Stratovolcano(es)",
     "type_cn": "层状火山",
     "status": "死火山",
@@ -13036,7 +13036,7 @@
   },
   {
     "name": "North Gorda Ridge Segment",
-    "name_cn": "北Gorda Ridge段火山",
+    "name_cn": "北戈尔达海岭段",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "活火山",
@@ -13066,7 +13066,7 @@
   },
   {
     "name": "North Vate",
-    "name_cn": "诺尔瓦特火山",
+    "name_cn": "北瓦特火山",
     "type": "Stratovolcano(es)",
     "type_cn": "层状火山",
     "status": "休眠火山",
@@ -13141,7 +13141,7 @@
   },
   {
     "name": "Northern Lake Abaya Volcanic Field",
-    "name_cn": "北Lake Abaya火山区",
+    "name_cn": "北阿巴亚湖火山区",
     "type": "Volcanic field",
     "type_cn": "火山区",
     "status": "休眠火山",
@@ -13291,7 +13291,7 @@
   },
   {
     "name": "O'a Caldera",
-    "name_cn": "奥阿卡尔德拉火山",
+    "name_cn": "奥阿破火山口",
     "type": "Caldera",
     "type_cn": "破火山口",
     "status": "休眠火山",
@@ -13486,7 +13486,7 @@
   },
   {
     "name": "Omanago Group",
-    "name_cn": "奥姆安阿格奥群火山",
+    "name_cn": "奥马纳戈火山群",
     "type": "Lava dome(s)",
     "type_cn": "熔岩穹丘",
     "status": "休眠火山",
@@ -14596,7 +14596,7 @@
   },
   {
     "name": "Purico Complex",
-    "name_cn": "普尔伊克奥科姆普莱火山",
+    "name_cn": "普里科火山复合体",
     "type": "Pyroclastic shield",
     "type_cn": "火山碎屑盾",
     "status": "休眠火山",
@@ -15361,7 +15361,7 @@
   },
   {
     "name": "Rumble II West",
-    "name_cn": "鲁莱伊伊韦火山",
+    "name_cn": "朗布尔II西海底火山",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "休眠火山",
@@ -15871,7 +15871,7 @@
   },
   {
     "name": "Sand Mountain Field",
-    "name_cn": "Sand  Field山火山",
+    "name_cn": "沙山火山区",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -16261,7 +16261,7 @@
   },
   {
     "name": "Segererua Plateau",
-    "name_cn": "塞格尔厄尔乌阿普拉特奥火山",
+    "name_cn": "塞格雷鲁阿高原火山",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -16711,7 +16711,7 @@
   },
   {
     "name": "Singu Plateau",
-    "name_cn": "辛古普拉特奥火山",
+    "name_cn": "辛古高原火山",
     "type": "Fissure vent(s)",
     "type_cn": "裂隙喷口",
     "status": "休眠火山",
@@ -17101,7 +17101,7 @@
   },
   {
     "name": "South Sarigan Seamount",
-    "name_cn": "南Sarigan海底火山",
+    "name_cn": "南萨里甘海底火山",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "活火山",
@@ -17191,7 +17191,7 @@
   },
   {
     "name": "Spectrum Range",
-    "name_cn": "Spectrum山脉火山",
+    "name_cn": "斯佩克特拉姆山脉火山",
     "type": "Shield",
     "type_cn": "盾状火山",
     "status": "休眠火山",
@@ -17251,7 +17251,7 @@
   },
   {
     "name": "St. Andrew Strait",
-    "name_cn": "安雷斯特艾火山",
+    "name_cn": "圣安德鲁海峡火山",
     "type": "Complex",
     "type_cn": "复合火山",
     "status": "活火山",
@@ -17356,7 +17356,7 @@
   },
   {
     "name": "Stepovak Bay 2",
-    "name_cn": "斯特波瓦贝火山",
+    "name_cn": "斯特波瓦克湾2号火山",
     "type": "Pyroclastic cone",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -17371,7 +17371,7 @@
   },
   {
     "name": "Stepovak Bay 3",
-    "name_cn": "斯特波瓦贝火山",
+    "name_cn": "斯特波瓦克湾3号火山",
     "type": "Pyroclastic cone",
     "type_cn": "火山碎屑锥",
     "status": "死火山",
@@ -17386,7 +17386,7 @@
   },
   {
     "name": "Stepovak Bay 4",
-    "name_cn": "斯特波瓦贝火山",
+    "name_cn": "斯特波瓦克湾4号火山",
     "type": "Stratovolcano",
     "type_cn": "层状火山",
     "status": "休眠火山",
@@ -17476,7 +17476,7 @@
   },
   {
     "name": "Sulu Range",
-    "name_cn": "Sulu山脉火山",
+    "name_cn": "苏禄山脉火山",
     "type": "Stratovolcano(es)",
     "type_cn": "层状火山",
     "status": "休眠火山",
@@ -17881,7 +17881,7 @@
   },
   {
     "name": "Takuan Group",
-    "name_cn": "塔库安群火山",
+    "name_cn": "塔库安火山群",
     "type": "Compound",
     "type_cn": "复式火山",
     "status": "休眠火山",
@@ -18991,7 +18991,7 @@
   },
   {
     "name": "Tondano Caldera",
-    "name_cn": "通丹奥卡尔德拉火山",
+    "name_cn": "通达诺破火山口",
     "type": "Caldera",
     "type_cn": "破火山口",
     "status": "休眠火山",
@@ -19291,7 +19291,7 @@
   },
   {
     "name": "Tseax River Cone",
-    "name_cn": "Tseax River锥火山",
+    "name_cn": "策阿克斯河锥火山",
     "type": "Pyroclastic cone",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -19396,7 +19396,7 @@
   },
   {
     "name": "Tunkin Depression",
-    "name_cn": "通金德普雷西翁火山",
+    "name_cn": "通金凹地",
     "type": "Volcanic field",
     "type_cn": "火山区",
     "status": "死火山",
@@ -19576,7 +19576,7 @@
   },
   {
     "name": "Udokan Plateau",
-    "name_cn": "乌德奥克安普拉特奥火山",
+    "name_cn": "乌多坎高原火山",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -20161,7 +20161,7 @@
   },
   {
     "name": "Vernadskii Ridge",
-    "name_cn": "维尔纳茨基岭火山",
+    "name_cn": "维尔纳茨基海岭",
     "type": "Pyroclastic cone(s)",
     "type_cn": "火山碎屑锥",
     "status": "休眠火山",
@@ -20446,7 +20446,7 @@
   },
   {
     "name": "Walvis Ridge at 33°S",
-    "name_cn": "Walvis岭火山",
+    "name_cn": "沃尔维斯海岭(33°S)",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "活火山",
@@ -20536,7 +20536,7 @@
   },
   {
     "name": "West Eifel Volcanic Field",
-    "name_cn": "西Eifel火山区",
+    "name_cn": "西艾费尔火山区",
     "type": "Maar(s)",
     "type_cn": "低平火山口",
     "status": "休眠火山",
@@ -20551,7 +20551,7 @@
   },
   {
     "name": "West Mata",
-    "name_cn": "西马塔火山",
+    "name_cn": "西马塔海底火山",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "活火山",
@@ -20566,7 +20566,7 @@
   },
   {
     "name": "West Valley Segment",
-    "name_cn": "韦瓦尔莱塞门火山",
+    "name_cn": "西谷段海底火山",
     "type": "Submarine",
     "type_cn": "海底火山",
     "status": "休眠火山",
@@ -21121,7 +21121,7 @@
   },
   {
     "name": "Zealandia Bank",
-    "name_cn": "泽阿尔安迪阿班火山",
+    "name_cn": "西兰浅滩",
     "type": "Stratovolcano",
     "type_cn": "层状火山",
     "status": "休眠火山",
