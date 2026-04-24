@@ -858,19 +858,23 @@ renderer.domElement.addEventListener('pointermove',e=>{
   if(clusterHovered)return;
   mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(mouse,camera);
-  const vis=volcanoSprites.filter(s=>s.visible);
-  const vHits=raycaster.intersectObjects(vis);
-  if(vHits.length>0){
-    const mx=e.clientX,my=e.clientY;
-    const nearby=[];vis.forEach(sp=>{const p=screenPos(sp);if(p.z>1)return;const dx=p.x-mx,dy=p.y-my;if(Math.sqrt(dx*dx+dy*dy)<CLUSTER_PX)nearby.push(sp);});
-    if(nearby.length>1){tooltipEl.style.display='none';buildCluster(nearby,mx,my);document.body.style.cursor='pointer';return;}
-    clusterEl.style.display='none';tooltipEl.innerHTML=tipHTML(vHits[0].object.userData);posEl(tooltipEl,mx,my);document.body.style.cursor='pointer';return;
+  if(volcanoGroup.visible){
+    const vis=volcanoSprites.filter(s=>s.visible);
+    const vHits=raycaster.intersectObjects(vis);
+    if(vHits.length>0){
+      const mx=e.clientX,my=e.clientY;
+      const nearby=[];vis.forEach(sp=>{const p=screenPos(sp);if(p.z>1)return;const dx=p.x-mx,dy=p.y-my;if(Math.sqrt(dx*dx+dy*dy)<CLUSTER_PX)nearby.push(sp);});
+      if(nearby.length>1){tooltipEl.style.display='none';buildCluster(nearby,mx,my);document.body.style.cursor='pointer';return;}
+      clusterEl.style.display='none';tooltipEl.innerHTML=tipHTML(vHits[0].object.userData);posEl(tooltipEl,mx,my);document.body.style.cursor='pointer';return;
+    }
   }
   clusterEl.style.display='none';
-  let closest=null,cDist=Infinity;
-  for(const line of bPairs.map(p=>p.main)){if(!line.visible)continue;const ints=raycaster.intersectObject(line);if(ints.length&&ints[0].distance<cDist){cDist=ints[0].distance;closest=line;}}
-  if(closest){tooltipEl.textContent=closest.userData.label;posEl(tooltipEl,e.clientX,e.clientY);document.body.style.cursor='pointer';}
-  else{tooltipEl.style.display='none';document.body.style.cursor='default';}
+  if(boundaryGroup.visible){
+    let closest=null,cDist=Infinity;
+    for(const line of bPairs.map(p=>p.main)){if(!line.visible)continue;const ints=raycaster.intersectObject(line);if(ints.length&&ints[0].distance<cDist){cDist=ints[0].distance;closest=line;}}
+    if(closest){tooltipEl.textContent=closest.userData.label;posEl(tooltipEl,e.clientX,e.clientY);document.body.style.cursor='pointer';return;}
+  }
+  tooltipEl.style.display='none';document.body.style.cursor='default';
 });
 
 /* ══════════ Pause ══════════ */
