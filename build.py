@@ -359,7 +359,6 @@ function mkTex(id){
   const img=document.getElementById(id);
   const t=new THREE.Texture(img);t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;return t;
 }
-let cloudsMat, cloudsMesh;
 function loadAllTex(){
   const ids=['earth-tex','bump-tex'];
   const all=ids.map(id=>{const img=document.getElementById(id);return img.complete&&img.naturalWidth>0;});
@@ -390,129 +389,6 @@ for(let lng=-180;lng<180;lng+=15){
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
   gridGroup.add(new THREE.Line(g,gridMat));
 }
-
-/* ══════════ Procedural Cloud Layer ══════════ */
-const cloudVS=`
-varying vec3 vPos;
-void main(){
-  vPos=position;
-  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
-}`;
-const cloudFS=`
-uniform float uTime;
-varying vec3 vPos;
-
-/* simplex 3D noise */
-vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x,289.0);}
-vec4 tsi(vec4 x){return 1.79284291400159-0.85373472095314*x;}
-float snoise(vec3 v){
-  const vec2 C=vec2(1.0/6.0,1.0/3.0);
-  const vec4 D=vec4(0.0,0.5,1.0,2.0);
-  vec3 i=floor(v+dot(v,C.yyy));
-  vec3 x0=v-i+dot(i,C.xxx);
-  vec3 g=step(x0.yzx,x0.xyz);
-  vec3 l=1.0-g;
-  vec3 i1=min(g,l.zxy);
-  vec3 i2=max(g,l.zxy);
-  vec3 x1=x0-i1+C.xxx;
-  vec3 x2=x0-i2+C.yyy;
-  vec3 x3=x0-D.yyy;
-  i=mod(i,289.0);
-  vec4 p=permute(permute(permute(
-    i.z+vec4(0.0,i1.z,i2.z,1.0))
-    +i.y+vec4(0.0,i1.y,i2.y,1.0))
-    +i.x+vec4(0.0,i1.x,i2.x,1.0));
-  float n_=1.0/7.0;
-  vec3 ns=n_*D.wyz-D.xzx;
-  vec4 j=p-49.0*floor(p*ns.z*ns.z);
-  vec4 x_=floor(j*ns.z);
-  vec4 y_=floor(j-7.0*x_);
-  vec4 xx=x_*ns.x+ns.yyyy;
-  vec4 yy=y_*ns.x+ns.yyyy;
-  vec4 h=1.0-abs(xx)-abs(yy);
-  vec4 b0=vec4(xx.xy,yy.xy);
-  vec4 b1=vec4(xx.zw,yy.zw);
-  vec4 s0=floor(b0)*2.0+1.0;
-  vec4 s1=floor(b1)*2.0+1.0;
-  vec4 sh=-step(h,vec4(0.0));
-  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;
-  vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
-  vec3 p0=vec3(a0.xy,h.x);
-  vec3 p1=vec3(a0.zw,h.y);
-  vec3 p2=vec3(a1.xy,h.z);
-  vec3 p3=vec3(a1.zw,h.w);
-  vec4 norm=tsi(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
-  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
-  vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);
-  m=m*m;
-  return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
-}
-
-float fbm(vec3 p,float t){
-  float v=0.0,a=0.5;
-  vec3 shift=vec3(t*0.12,t*0.08,-t*0.05);
-  for(int i=0;i<5;i++){
-    v+=a*snoise(p+shift);
-    p=p*2.1+vec3(1.7,9.2,3.4);
-    shift*=1.3;
-    a*=0.5;
-  }
-  return v;
-}
-
-void main(){
-  vec3 n=normalize(vPos);
-  float lat=asin(n.y);
-  float lon=atan(n.z,n.x);
-
-  /* atmospheric circulation: cloud density by latitude band */
-  float absLat=abs(lat);
-  float itcz=exp(-pow((absLat-0.05)/0.18,2.0));
-  float midlat=exp(-pow((absLat-0.85)/0.28,2.0));
-  float polar=exp(-pow((absLat-1.45)/0.2,2.0));
-  float subtropical=1.0-0.5*exp(-pow((absLat-0.45)/0.15,2.0));
-  float latMask=(0.7*itcz+0.65*midlat+0.4*polar)*subtropical+0.22;
-  latMask=clamp(latMask,0.0,1.0);
-
-  /* wind-driven longitude shift per latitude */
-  float trade=smoothstep(0.0,0.5,absLat)*0.3;
-  float westerly=smoothstep(0.5,1.0,absLat)*(-0.2);
-  float lonShift=(trade+westerly)*uTime*0.08;
-
-  /* 3D noise sampling on sphere surface */
-  float sc=3.2;
-  vec3 sp=vec3(
-    cos(lat)*cos(lon+lonShift)*sc,
-    sin(lat)*sc,
-    cos(lat)*sin(lon+lonShift)*sc
-  );
-
-  float layer1=fbm(sp,uTime*0.15);
-  float layer2=fbm(sp*1.8+vec3(50.0,30.0,70.0),uTime*0.1);
-
-  float cloud=layer1*0.65+layer2*0.35;
-  cloud=(cloud+1.0)*0.5;
-  cloud=cloud*latMask;
-
-  float density=smoothstep(0.28,0.58,cloud);
-
-  /* volume/thickness: brighter core, softer edges */
-  float thick=smoothstep(0.28,0.7,cloud);
-  float brightness=0.88+0.12*thick;
-
-  float alpha=density*0.75;
-
-  gl_FragColor=vec4(vec3(brightness),alpha);
-}`;
-cloudsMat = new THREE.ShaderMaterial({
-  vertexShader:cloudVS,
-  fragmentShader:cloudFS,
-  uniforms:{uTime:{value:0.0}},
-  transparent:true, depthWrite:false, side:THREE.FrontSide
-});
-cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.018,128,128),cloudsMat);
-cloudsMesh.rotation.x = TILT;
-scene.add(cloudsMesh);
 
 /* ══════════ Stars ══════════ */
 (function(){
@@ -710,15 +586,6 @@ terrainBtn.addEventListener('click',e=>{
   earthMat.uniforms.uBumpScale.value=showBump?0.018:0.0;
 });
 dGrid.appendChild(terrainBtn);
-const atmoBtn=document.createElement('button');atmoBtn.className='chip active';atmoBtn.textContent='🌤 大气层';
-atmoBtn.addEventListener('click',e=>{
-  e.stopPropagation();
-  const vis=!cloudsMesh.visible;
-  cloudsMesh.visible=vis;
-  atmoBtn.classList.toggle('active',vis);
-});
-dGrid.appendChild(atmoBtn);
-
 /* ══════════ Plate Split Feature ══════════ */
 const SPLIT_INFO = __PLATE_INFO__;
 const splitParent=new THREE.Group();splitParent.rotation.x=TILT;splitParent.visible=false;scene.add(splitParent);
@@ -1051,11 +918,6 @@ function syncRotY(){
 
   /* volcano pulse */
   volcanoSprites.forEach((sp,i)=>{if(sp.visible)sp.material.opacity=0.72+0.28*Math.sin(t*2.5+i*0.6);});
-
-  /* cloud animation */
-  if(cloudsMat&&cloudsMat.uniforms){
-    cloudsMat.uniforms.uTime.value=t;
-  }
 
   earthMat.uniforms.uCam.value.copy(camera.position);
   renderer.render(scene,camera);
