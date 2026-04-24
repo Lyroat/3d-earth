@@ -514,6 +514,15 @@ let activeVFilter=null;
   });
   vGrid.appendChild(btn);
 });
+const hideVBtn=document.createElement('div');hideVBtn.className='chip';hideVBtn.textContent='🚫 隐藏火山';
+hideVBtn.addEventListener('click',e=>{
+  e.stopPropagation();
+  const hidden=volcanoGroup.visible;
+  volcanoGroup.visible=!hidden;
+  hideVBtn.classList.toggle('active',!volcanoGroup.visible);
+  hideVBtn.textContent=volcanoGroup.visible?'🚫 隐藏火山':'👁 显示火山';
+});
+vGrid.appendChild(hideVBtn);
 
 /* ══════════ Boundary Filter ══════════ */
 const bGrid=document.getElementById('boundary-grid');
@@ -534,6 +543,14 @@ let highlightBtype = null;
   });
   bGrid.appendChild(btn);
 });
+const hideBBtn=document.createElement('div');hideBBtn.className='chip';hideBBtn.textContent='🚫 隐藏边界';
+hideBBtn.addEventListener('click',e=>{
+  e.stopPropagation();
+  boundaryGroup.visible=!boundaryGroup.visible;
+  hideBBtn.classList.toggle('active',!boundaryGroup.visible);
+  hideBBtn.textContent=boundaryGroup.visible?'🚫 隐藏边界':'👁 显示边界';
+});
+bGrid.appendChild(hideBBtn);
 function resetBoundaryColors(){
   bPairs.forEach(p=>{
     p.main.material.color.setHex(p.origColor);p.main.material.linewidth=1.8;p.main.material.opacity=0.9;
@@ -567,6 +584,17 @@ PLATES.forEach(pl=>{
   });
   pGrid.appendChild(btn);
 });
+const hidePBtn=document.createElement('div');hidePBtn.className='chip';hidePBtn.textContent='🚫 隐藏板块';
+hidePBtn.addEventListener('click',e=>{
+  e.stopPropagation();
+  boundaryGroup.visible=!boundaryGroup.visible;
+  gridGroup.visible=boundaryGroup.visible;
+  hidePBtn.classList.toggle('active',!boundaryGroup.visible);
+  hidePBtn.textContent=boundaryGroup.visible?'🚫 隐藏板块':'👁 显示板块';
+  hideBBtn.classList.toggle('active',!boundaryGroup.visible);
+  hideBBtn.textContent=boundaryGroup.visible?'🚫 隐藏边界':'👁 显示边界';
+});
+pGrid.appendChild(hidePBtn);
 const splitBtn=document.createElement('button');splitBtn.id='split-btn';splitBtn.textContent='🔄 拆分板块';
 splitBtn.addEventListener('click',e=>{e.stopPropagation();toggleSplit();});
 pGrid.appendChild(splitBtn);
