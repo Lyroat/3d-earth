@@ -371,7 +371,8 @@ function loadAllTex(){
   earthMat.uniforms.uTex.value=mkTex('earth-tex');
   earthMat.uniforms.uBumpTex.value=mkTex('bump-tex');
   cloudTexReady=mkTex('clouds-tex');
-  if(cloudsMat){cloudsMat.map=cloudTexReady;cloudsMat.needsUpdate=true;}
+  cloudTexReady.wrapS=THREE.RepeatWrapping;cloudTexReady.wrapT=THREE.ClampToEdgeWrapping;
+  if(cloudsMat&&cloudsMat.uniforms){cloudsMat.uniforms.uCloud.value=cloudTexReady;}
   document.getElementById('loading').classList.add('hidden');
 }
 loadAllTex();
@@ -397,12 +398,39 @@ for(let lng=-180;lng<180;lng+=15){
   gridGroup.add(new THREE.Line(g,gridMat));
 }
 
-/* ══════════ Cloud Layer ══════════ */
-cloudsMat = new THREE.MeshBasicMaterial({
-  transparent:true, opacity:0.35, depthWrite:false, blending:THREE.AdditiveBlending
+/* ══════════ Cloud Layer (dual-layer with variable opacity) ══════════ */
+cloudsMat = new THREE.ShaderMaterial({
+  vertexShader:`
+    varying vec2 vUv;
+    void main(){
+      vUv=uv;
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+    }`,
+  fragmentShader:`
+    uniform sampler2D uCloud;
+    uniform float uTime;
+    varying vec2 vUv;
+    void main(){
+      vec2 uv1=vUv+vec2(uTime*0.003,uTime*0.001);
+      uv1.x=fract(uv1.x); uv1.y=clamp(uv1.y,0.0,1.0);
+      vec2 uv2=vUv+vec2(-uTime*0.002,uTime*0.0005);
+      uv2.x=fract(uv2.x); uv2.y=clamp(uv2.y,0.0,1.0);
+      vec4 c1=texture2D(uCloud,uv1);
+      vec4 c2=texture2D(uCloud,uv2);
+      float lum1=dot(c1.rgb,vec3(0.299,0.587,0.114));
+      float lum2=dot(c2.rgb,vec3(0.299,0.587,0.114));
+      float lum=max(lum1,lum2*0.6);
+      float alpha=smoothstep(0.15,0.7,lum)*0.55;
+      gl_FragColor=vec4(1.0,1.0,1.0,alpha);
+    }`,
+  uniforms:{
+    uCloud:{value:null},
+    uTime:{value:0.0}
+  },
+  transparent:true, depthWrite:false, side:THREE.FrontSide
 });
-if(cloudTexReady){cloudsMat.map=cloudTexReady;cloudsMat.needsUpdate=true;}
-cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.015,128,128),cloudsMat);
+if(cloudTexReady){cloudTexReady.wrapS=THREE.RepeatWrapping;cloudTexReady.wrapT=THREE.ClampToEdgeWrapping;cloudsMat.uniforms.uCloud.value=cloudTexReady;}
+cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.012,128,128),cloudsMat);
 cloudsMesh.rotation.x = TILT;
 scene.add(cloudsMesh);
 
@@ -906,7 +934,7 @@ function syncRotY(){
   boundaryGroup.rotation.y=earth.rotation.y;
   volcanoGroup.rotation.y=earth.rotation.y;gridGroup.rotation.y=earth.rotation.y;
   splitParent.rotation.y=earth.rotation.y;
-  cloudsMesh.rotation.y=earth.rotation.y+0.05;
+  cloudsMesh.rotation.y=earth.rotation.y;
 }
 
 (function animate(){
@@ -944,6 +972,9 @@ function syncRotY(){
 
   /* volcano pulse */
   volcanoSprites.forEach((sp,i)=>{if(sp.visible)sp.material.opacity=0.72+0.28*Math.sin(t*2.5+i*0.6);});
+
+  /* cloud drift */
+  if(cloudsMat&&cloudsMat.uniforms&&cloudsMat.uniforms.uTime)cloudsMat.uniforms.uTime.value=t;
 
   earthMat.uniforms.uCam.value.copy(camera.position);
   renderer.render(scene,camera);
