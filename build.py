@@ -844,7 +844,12 @@ function buildCluster(sprites,mx,my){
 
 renderer.domElement.addEventListener('pointermove',e=>{
   if(clusterHovered)return;
-  if(splitActive){tooltipEl.style.display='none';clusterEl.style.display='none';document.body.style.cursor='default';return;}
+  const barEl=document.getElementById('bottom-bar');
+  const barRect=barEl.getBoundingClientRect();
+  const overBar=e.clientY>=barRect.top;
+  const overPopup=document.querySelector('.popup-menu.show');
+  const inPopup=overPopup&&overPopup.getBoundingClientRect().top<=e.clientY&&e.clientX>=overPopup.getBoundingClientRect().left&&e.clientX<=overPopup.getBoundingClientRect().right;
+  if(splitActive||overBar||inPopup){tooltipEl.style.display='none';clusterEl.style.display='none';document.body.style.cursor='default';return;}
   mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(mouse,camera);
   const eDist=earthDist(raycaster);
