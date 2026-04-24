@@ -9,9 +9,6 @@ with open('earth-b64.txt', 'r') as f:
     b64 = f.read().strip()
 with open('bump-b64.txt', 'r') as f:
     bump_b64 = f.read().strip()
-with open('clouds-b64.txt', 'r') as f:
-    clouds_b64 = f.read().strip()
-
 # ── 2. Plate boundaries (PB2002 steps) ──
 with open('tectonicplates-master/GeoJSON/PB2002_steps.json') as f:
     steps_data = json.load(f)
@@ -261,7 +258,6 @@ canvas{display:block}
 
 <img id="earth-tex" style="display:none" src="data:image/jpeg;base64,__B64__" />
 <img id="bump-tex" style="display:none" src="data:image/jpeg;base64,__BUMP_B64__" />
-<img id="clouds-tex" style="display:none" src="data:image/jpeg;base64,__CLOUDS_B64__" />
 
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}
@@ -363,16 +359,13 @@ function mkTex(id){
   const img=document.getElementById(id);
   const t=new THREE.Texture(img);t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;return t;
 }
-let cloudsMat, cloudsMesh, cloudTexReady=null;
+let cloudsMat, cloudsMesh;
 function loadAllTex(){
-  const ids=['earth-tex','bump-tex','clouds-tex'];
+  const ids=['earth-tex','bump-tex'];
   const all=ids.map(id=>{const img=document.getElementById(id);return img.complete&&img.naturalWidth>0;});
   if(!all.every(Boolean)){setTimeout(loadAllTex,50);return;}
   earthMat.uniforms.uTex.value=mkTex('earth-tex');
   earthMat.uniforms.uBumpTex.value=mkTex('bump-tex');
-  cloudTexReady=mkTex('clouds-tex');
-  cloudTexReady.wrapS=THREE.RepeatWrapping;cloudTexReady.wrapT=THREE.ClampToEdgeWrapping;
-  if(cloudsMat&&cloudsMat.uniforms){cloudsMat.uniforms.uCloud.value=cloudTexReady;}
   document.getElementById('loading').classList.add('hidden');
 }
 loadAllTex();
@@ -398,34 +391,138 @@ for(let lng=-180;lng<180;lng+=15){
   gridGroup.add(new THREE.Line(g,gridMat));
 }
 
-/* ══════════ Cloud Layer ══════════ */
+/* ══════════ Procedural Cloud Layer ══════════ */
+const cloudVS=`
+varying vec3 vPos;
+varying vec3 vNorm;
+varying vec3 vWorld;
+void main(){
+  vPos=position;
+  vNorm=normalize(normalMatrix*normal);
+  vWorld=(modelMatrix*vec4(position,1.0)).xyz;
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+}`;
+const cloudFS=`
+uniform float uTime;
+uniform vec3 uCam;
+varying vec3 vPos;
+varying vec3 vNorm;
+varying vec3 vWorld;
+
+/* simplex 3D noise */
+vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x,289.0);}
+vec4 tsi(vec4 x){return 1.79284291400159-0.85373472095314*x;}
+float snoise(vec3 v){
+  const vec2 C=vec2(1.0/6.0,1.0/3.0);
+  const vec4 D=vec4(0.0,0.5,1.0,2.0);
+  vec3 i=floor(v+dot(v,C.yyy));
+  vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz);
+  vec3 l=1.0-g;
+  vec3 i1=min(g,l.zxy);
+  vec3 i2=max(g,l.zxy);
+  vec3 x1=x0-i1+C.xxx;
+  vec3 x2=x0-i2+C.yyy;
+  vec3 x3=x0-D.yyy;
+  i=mod(i,289.0);
+  vec4 p=permute(permute(permute(
+    i.z+vec4(0.0,i1.z,i2.z,1.0))
+    +i.y+vec4(0.0,i1.y,i2.y,1.0))
+    +i.x+vec4(0.0,i1.x,i2.x,1.0));
+  float n_=1.0/7.0;
+  vec3 ns=n_*D.wyz-D.xzx;
+  vec4 j=p-49.0*floor(p*ns.z*ns.z);
+  vec4 x_=floor(j*ns.z);
+  vec4 y_=floor(j-7.0*x_);
+  vec4 xx=x_*ns.x+ns.yyyy;
+  vec4 yy=y_*ns.x+ns.yyyy;
+  vec4 h=1.0-abs(xx)-abs(yy);
+  vec4 b0=vec4(xx.xy,yy.xy);
+  vec4 b1=vec4(xx.zw,yy.zw);
+  vec4 s0=floor(b0)*2.0+1.0;
+  vec4 s1=floor(b1)*2.0+1.0;
+  vec4 sh=-step(h,vec4(0.0));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;
+  vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x);
+  vec3 p1=vec3(a0.zw,h.y);
+  vec3 p2=vec3(a1.xy,h.z);
+  vec3 p3=vec3(a1.zw,h.w);
+  vec4 norm=tsi(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+  vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);
+  m=m*m;
+  return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+
+float fbm(vec3 p,float t){
+  float v=0.0,a=0.5;
+  vec3 shift=vec3(t*0.12,t*0.08,-t*0.05);
+  for(int i=0;i<5;i++){
+    v+=a*snoise(p+shift);
+    p=p*2.1+vec3(1.7,9.2,3.4);
+    shift*=1.3;
+    a*=0.5;
+  }
+  return v;
+}
+
+void main(){
+  vec3 n=normalize(vPos);
+  float lat=asin(n.y);
+  float lon=atan(n.z,n.x);
+
+  /* atmospheric circulation: cloud density by latitude band */
+  float absLat=abs(lat);
+  float itcz=exp(-pow((absLat-0.05)/0.18,2.0));
+  float midlat=exp(-pow((absLat-0.85)/0.28,2.0));
+  float polar=exp(-pow((absLat-1.45)/0.2,2.0));
+  float subtropical=1.0-0.7*exp(-pow((absLat-0.45)/0.15,2.0));
+  float latMask=(0.6*itcz+0.55*midlat+0.3*polar)*subtropical+0.12;
+  latMask=clamp(latMask,0.0,1.0);
+
+  /* wind-driven longitude shift per latitude */
+  float trade=smoothstep(0.0,0.5,absLat)*0.3;
+  float westerly=smoothstep(0.5,1.0,absLat)*(-0.2);
+  float lonShift=(trade+westerly)*uTime*0.08;
+
+  /* 3D noise sampling on sphere surface */
+  float sc=3.2;
+  vec3 sp=vec3(
+    cos(lat)*cos(lon+lonShift)*sc,
+    sin(lat)*sc,
+    cos(lat)*sin(lon+lonShift)*sc
+  );
+
+  float layer1=fbm(sp,uTime*0.15);
+  float layer2=fbm(sp*1.8+vec3(50.0,30.0,70.0),uTime*0.1);
+
+  float cloud=layer1*0.65+layer2*0.35;
+  cloud=(cloud+1.0)*0.5;
+  cloud=cloud*latMask;
+
+  float density=smoothstep(0.38,0.72,cloud);
+
+  /* volume/thickness: brighter core, softer edges */
+  float thick=smoothstep(0.38,0.85,cloud);
+  float brightness=0.85+0.15*thick;
+
+  /* rim fade for volume illusion */
+  vec3 viewDir=normalize(uCam-vWorld);
+  float rim=dot(viewDir,vNorm);
+  float rimFade=smoothstep(0.0,0.35,rim);
+
+  float alpha=density*0.52*rimFade;
+
+  gl_FragColor=vec4(vec3(brightness),alpha);
+}`;
 cloudsMat = new THREE.ShaderMaterial({
-  vertexShader:`
-    varying vec2 vUv;
-    void main(){
-      vUv=uv;
-      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
-    }`,
-  fragmentShader:`
-    uniform sampler2D uCloud;
-    uniform float uTime;
-    varying vec2 vUv;
-    void main(){
-      vec2 uv1=vUv+vec2(uTime*0.002,uTime*0.0004);
-      uv1.x=fract(uv1.x); uv1.y=clamp(uv1.y,0.0,1.0);
-      vec4 c=texture2D(uCloud,uv1);
-      float lum=dot(c.rgb,vec3(0.299,0.587,0.114));
-      float alpha=smoothstep(0.12,0.65,lum)*0.5;
-      gl_FragColor=vec4(1.0,1.0,1.0,alpha);
-    }`,
-  uniforms:{
-    uCloud:{value:null},
-    uTime:{value:0.0}
-  },
+  vertexShader:cloudVS,
+  fragmentShader:cloudFS,
+  uniforms:{uTime:{value:0.0},uCam:{value:camera.position.clone()}},
   transparent:true, depthWrite:false, side:THREE.FrontSide
 });
-if(cloudTexReady){cloudTexReady.wrapS=THREE.RepeatWrapping;cloudTexReady.wrapT=THREE.ClampToEdgeWrapping;cloudsMat.uniforms.uCloud.value=cloudTexReady;}
-cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.012,128,128),cloudsMat);
+cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.018,128,128),cloudsMat);
 cloudsMesh.rotation.x = TILT;
 scene.add(cloudsMesh);
 
@@ -967,8 +1064,11 @@ function syncRotY(){
   /* volcano pulse */
   volcanoSprites.forEach((sp,i)=>{if(sp.visible)sp.material.opacity=0.72+0.28*Math.sin(t*2.5+i*0.6);});
 
-  /* cloud drift */
-  if(cloudsMat&&cloudsMat.uniforms&&cloudsMat.uniforms.uTime)cloudsMat.uniforms.uTime.value=t;
+  /* cloud animation */
+  if(cloudsMat&&cloudsMat.uniforms){
+    cloudsMat.uniforms.uTime.value=t;
+    cloudsMat.uniforms.uCam.value.copy(camera.position);
+  }
 
   earthMat.uniforms.uCam.value.copy(camera.position);
   renderer.render(scene,camera);
@@ -979,7 +1079,6 @@ function syncRotY(){
 
 html = template.replace('__B64__', b64) \
                .replace('__BUMP_B64__', bump_b64) \
-               .replace('__CLOUDS_B64__', clouds_b64) \
                .replace('__PLATE_DATA__', plate_data_json) \
                .replace('__VOLCANOES__', volcanoes_json) \
                .replace('__PLATE_INFO__', split_json)
