@@ -477,8 +477,8 @@ void main(){
   float itcz=exp(-pow((absLat-0.05)/0.18,2.0));
   float midlat=exp(-pow((absLat-0.85)/0.28,2.0));
   float polar=exp(-pow((absLat-1.45)/0.2,2.0));
-  float subtropical=1.0-0.7*exp(-pow((absLat-0.45)/0.15,2.0));
-  float latMask=(0.6*itcz+0.55*midlat+0.3*polar)*subtropical+0.12;
+  float subtropical=1.0-0.5*exp(-pow((absLat-0.45)/0.15,2.0));
+  float latMask=(0.7*itcz+0.65*midlat+0.4*polar)*subtropical+0.22;
   latMask=clamp(latMask,0.0,1.0);
 
   /* wind-driven longitude shift per latitude */
@@ -501,18 +501,18 @@ void main(){
   cloud=(cloud+1.0)*0.5;
   cloud=cloud*latMask;
 
-  float density=smoothstep(0.38,0.72,cloud);
+  float density=smoothstep(0.28,0.58,cloud);
 
   /* volume/thickness: brighter core, softer edges */
-  float thick=smoothstep(0.38,0.85,cloud);
-  float brightness=0.85+0.15*thick;
+  float thick=smoothstep(0.28,0.7,cloud);
+  float brightness=0.88+0.12*thick;
 
   /* rim fade for volume illusion */
   vec3 viewDir=normalize(uCam-vWorld);
   float rim=dot(viewDir,vNorm);
-  float rimFade=smoothstep(0.0,0.35,rim);
+  float rimFade=smoothstep(0.0,0.25,rim);
 
-  float alpha=density*0.52*rimFade;
+  float alpha=density*0.75*rimFade;
 
   gl_FragColor=vec4(vec3(brightness),alpha);
 }`;
