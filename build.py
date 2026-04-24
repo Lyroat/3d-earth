@@ -722,13 +722,14 @@ renderer.domElement.addEventListener('dblclick',e=>{
 
 /* ══════════ Click: select volcano or deselect ══════════ */
 renderer.domElement.addEventListener('click',e=>{
+  if(splitActive){return;}
   if(!volcanoGroup.visible){if(selectedVolcano)deselectVolcano();return;}
   const mx=(e.clientX/innerWidth)*2-1, my=-(e.clientY/innerHeight)*2+1;
   const rc=new THREE.Raycaster();
   rc.setFromCamera(new THREE.Vector2(mx,my),camera);
   const eDist=earthDist(rc);
-  const vis=volcanoSprites.filter(s=>s.visible);
-  const hits=rc.intersectObjects(vis).filter(h=>h.distance<eDist+0.01);
+  const vis=volcanoSprites.filter(s=>s.visible&&isVisible(s));
+  const hits=rc.intersectObjects(vis).filter(h=>h.distance<eDist+0.01&&isVisible(h.object));
   if(hits.length>0){
     const sp=hits[0].object;
     selectVolcano(sp);zoomToVolcano(sp.userData);
@@ -786,7 +787,10 @@ function earthDist(rc){
   const h=rc.intersectObject(earth);
   return h.length>0?h[0].distance:Infinity;
 }
-function isFrontSide(hit,rc){return hit.distance<earthDist(rc)+0.01;}
+function isVisible(sp){
+  const wp=new THREE.Vector3();sp.getWorldPosition(wp);
+  return wp.dot(camera.position)>0;
+}
 const tooltipEl=document.getElementById('tooltip');
 const clusterEl=document.getElementById('cluster-popup');
 let clusterHovered=false,clusterData=[];
@@ -840,12 +844,13 @@ function buildCluster(sprites,mx,my){
 
 renderer.domElement.addEventListener('pointermove',e=>{
   if(clusterHovered)return;
+  if(splitActive){tooltipEl.style.display='none';clusterEl.style.display='none';document.body.style.cursor='default';return;}
   mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(mouse,camera);
   const eDist=earthDist(raycaster);
   if(volcanoGroup.visible){
-    const vis=volcanoSprites.filter(s=>s.visible);
-    const vHits=raycaster.intersectObjects(vis).filter(h=>h.distance<eDist+0.01);
+    const vis=volcanoSprites.filter(s=>s.visible&&isVisible(s));
+    const vHits=raycaster.intersectObjects(vis).filter(h=>h.distance<eDist+0.01&&isVisible(h.object));
     if(vHits.length>0){
       const mx=e.clientX,my=e.clientY;
       const nearby=[];vis.forEach(sp=>{const p=screenPos(sp);if(p.z>1)return;const dx=p.x-mx,dy=p.y-my;if(Math.sqrt(dx*dx+dy*dy)<CLUSTER_PX)nearby.push(sp);});
