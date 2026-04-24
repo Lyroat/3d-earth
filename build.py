@@ -9,6 +9,8 @@ with open('earth-b64.txt', 'r') as f:
     b64 = f.read().strip()
 with open('bump-b64.txt', 'r') as f:
     bump_b64 = f.read().strip()
+with open('clouds-b64.txt', 'r') as f:
+    clouds_b64 = f.read().strip()
 
 # ── 2. Plate boundaries (PB2002 steps) ──
 with open('tectonicplates-master/GeoJSON/PB2002_steps.json') as f:
@@ -259,6 +261,7 @@ canvas{display:block}
 
 <img id="earth-tex" style="display:none" src="data:image/jpeg;base64,__B64__" />
 <img id="bump-tex" style="display:none" src="data:image/jpeg;base64,__BUMP_B64__" />
+<img id="clouds-tex" style="display:none" src="data:image/jpeg;base64,__CLOUDS_B64__" />
 
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}
@@ -361,11 +364,12 @@ function mkTex(id){
   const t=new THREE.Texture(img);t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;return t;
 }
 function loadAllTex(){
-  const ids=['earth-tex','bump-tex'];
+  const ids=['earth-tex','bump-tex','clouds-tex'];
   const all=ids.map(id=>{const img=document.getElementById(id);return img.complete&&img.naturalWidth>0;});
   if(!all.every(Boolean)){setTimeout(loadAllTex,50);return;}
   earthMat.uniforms.uTex.value=mkTex('earth-tex');
   earthMat.uniforms.uBumpTex.value=mkTex('bump-tex');
+  cloudsMat.map=mkTex('clouds-tex');cloudsMat.needsUpdate=true;
   document.getElementById('loading').classList.add('hidden');
 }
 loadAllTex();
@@ -391,7 +395,7 @@ for(let lng=-180;lng<180;lng+=15){
   gridGroup.add(new THREE.Line(g,gridMat));
 }
 
-/* ══════════ Atmosphere ══════════ */
+/* ══════════ Atmosphere (glow + clouds) ══════════ */
 const atmoMat = new THREE.ShaderMaterial({
   vertexShader:`varying vec3 vN;varying vec3 vW;void main(){vN=normalize(normalMatrix*normal);vW=(modelMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
   fragmentShader:`varying vec3 vN;varying vec3 vW;uniform vec3 uC;void main(){float g=pow(1.0-dot(normalize(uC-vW),vN),4.5);gl_FragColor=vec4(0.35,0.6,1.0,g*0.45);}`,
@@ -400,6 +404,14 @@ const atmoMat = new THREE.ShaderMaterial({
 const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(1.06,128,128),atmoMat);
 atmosphere.rotation.x = TILT;
 scene.add(atmosphere);
+
+const cloudsMat = new THREE.MeshBasicMaterial({
+  transparent:true, opacity:0.35, depthWrite:false, blending:THREE.AdditiveBlending
+});
+const cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.015,128,128),cloudsMat);
+cloudsMesh.rotation.x = TILT;
+scene.add(cloudsMesh);
+const atmoGroup = {glow:atmosphere, clouds:cloudsMesh};
 
 /* ══════════ Stars ══════════ */
 (function(){
@@ -584,17 +596,6 @@ PLATES.forEach(pl=>{
   });
   pGrid.appendChild(btn);
 });
-const hidePBtn=document.createElement('div');hidePBtn.className='chip';hidePBtn.textContent='🚫 隐藏板块';
-hidePBtn.addEventListener('click',e=>{
-  e.stopPropagation();
-  boundaryGroup.visible=!boundaryGroup.visible;
-  gridGroup.visible=boundaryGroup.visible;
-  hidePBtn.classList.toggle('active',!boundaryGroup.visible);
-  hidePBtn.textContent=boundaryGroup.visible?'🚫 隐藏板块':'👁 显示板块';
-  hideBBtn.classList.toggle('active',!boundaryGroup.visible);
-  hideBBtn.textContent=boundaryGroup.visible?'🚫 隐藏边界':'👁 显示边界';
-});
-pGrid.appendChild(hidePBtn);
 const splitBtn=document.createElement('button');splitBtn.id='split-btn';splitBtn.textContent='🔄 拆分板块';
 splitBtn.addEventListener('click',e=>{e.stopPropagation();toggleSplit();});
 pGrid.appendChild(splitBtn);
@@ -608,6 +609,14 @@ terrainBtn.addEventListener('click',e=>{
   earthMat.uniforms.uBumpScale.value=showBump?0.018:0.0;
 });
 dGrid.appendChild(terrainBtn);
+const atmoBtn=document.createElement('button');atmoBtn.className='chip active';atmoBtn.textContent='🌤 大气层';
+atmoBtn.addEventListener('click',e=>{
+  e.stopPropagation();
+  const vis=!atmosphere.visible;
+  atmosphere.visible=vis;cloudsMesh.visible=vis;
+  atmoBtn.classList.toggle('active',vis);
+});
+dGrid.appendChild(atmoBtn);
 
 /* ══════════ Plate Split Feature ══════════ */
 const SPLIT_INFO = __PLATE_INFO__;
@@ -904,6 +913,7 @@ function syncRotY(){
   atmosphere.rotation.y=earth.rotation.y;boundaryGroup.rotation.y=earth.rotation.y;
   volcanoGroup.rotation.y=earth.rotation.y;gridGroup.rotation.y=earth.rotation.y;
   splitParent.rotation.y=earth.rotation.y;
+  cloudsMesh.rotation.y=earth.rotation.y+0.05;
 }
 
 (function animate(){
@@ -952,6 +962,7 @@ function syncRotY(){
 
 html = template.replace('__B64__', b64) \
                .replace('__BUMP_B64__', bump_b64) \
+               .replace('__CLOUDS_B64__', clouds_b64) \
                .replace('__PLATE_DATA__', plate_data_json) \
                .replace('__VOLCANOES__', volcanoes_json) \
                .replace('__PLATE_INFO__', split_json)
