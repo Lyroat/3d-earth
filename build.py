@@ -310,7 +310,7 @@ document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-controls.minDistance = 1.3;
+controls.minDistance = 2.0;
 controls.maxDistance = 10;
 controls.rotateSpeed = 0.5;
 controls.zoomSpeed = 0.8;
