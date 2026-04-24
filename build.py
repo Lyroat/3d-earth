@@ -745,11 +745,13 @@ renderer.domElement.addEventListener('dblclick',e=>{
 
 /* ══════════ Click: select volcano or deselect ══════════ */
 renderer.domElement.addEventListener('click',e=>{
+  if(!volcanoGroup.visible){if(selectedVolcano)deselectVolcano();return;}
   const mx=(e.clientX/innerWidth)*2-1, my=-(e.clientY/innerHeight)*2+1;
   const rc=new THREE.Raycaster();
   rc.setFromCamera(new THREE.Vector2(mx,my),camera);
+  const eDist=earthDist(rc);
   const vis=volcanoSprites.filter(s=>s.visible);
-  const hits=rc.intersectObjects(vis);
+  const hits=rc.intersectObjects(vis).filter(h=>h.distance<eDist+0.01);
   if(hits.length>0){
     const sp=hits[0].object;
     selectVolcano(sp);zoomToVolcano(sp.userData);
@@ -803,6 +805,11 @@ searchInput.addEventListener('blur',()=>{setTimeout(()=>{searchResults.style.dis
 /* ══════════ Tooltip / Cluster ══════════ */
 const raycaster=new THREE.Raycaster();raycaster.params.Line2={threshold:0.02};
 const mouse=new THREE.Vector2();
+function earthDist(rc){
+  const h=rc.intersectObject(earth);
+  return h.length>0?h[0].distance:Infinity;
+}
+function isFrontSide(hit,rc){return hit.distance<earthDist(rc)+0.01;}
 const tooltipEl=document.getElementById('tooltip');
 const clusterEl=document.getElementById('cluster-popup');
 let clusterHovered=false,clusterData=[];
@@ -858,9 +865,10 @@ renderer.domElement.addEventListener('pointermove',e=>{
   if(clusterHovered)return;
   mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(mouse,camera);
+  const eDist=earthDist(raycaster);
   if(volcanoGroup.visible){
     const vis=volcanoSprites.filter(s=>s.visible);
-    const vHits=raycaster.intersectObjects(vis);
+    const vHits=raycaster.intersectObjects(vis).filter(h=>h.distance<eDist+0.01);
     if(vHits.length>0){
       const mx=e.clientX,my=e.clientY;
       const nearby=[];vis.forEach(sp=>{const p=screenPos(sp);if(p.z>1)return;const dx=p.x-mx,dy=p.y-my;if(Math.sqrt(dx*dx+dy*dy)<CLUSTER_PX)nearby.push(sp);});
@@ -871,7 +879,7 @@ renderer.domElement.addEventListener('pointermove',e=>{
   clusterEl.style.display='none';
   if(boundaryGroup.visible){
     let closest=null,cDist=Infinity;
-    for(const line of bPairs.map(p=>p.main)){if(!line.visible)continue;const ints=raycaster.intersectObject(line);if(ints.length&&ints[0].distance<cDist){cDist=ints[0].distance;closest=line;}}
+    for(const line of bPairs.map(p=>p.main)){if(!line.visible)continue;const ints=raycaster.intersectObject(line);if(ints.length&&ints[0].distance<eDist+0.01&&ints[0].distance<cDist){cDist=ints[0].distance;closest=line;}}
     if(closest){tooltipEl.textContent=closest.userData.label;posEl(tooltipEl,e.clientX,e.clientY);document.body.style.cursor='pointer';return;}
   }
   tooltipEl.style.display='none';document.body.style.cursor='default';
