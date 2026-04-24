@@ -507,10 +507,10 @@ void main(){
   float thick=smoothstep(0.28,0.7,cloud);
   float brightness=0.88+0.12*thick;
 
-  /* rim fade for volume illusion */
+  /* subtle rim fade only at extreme edge */
   vec3 viewDir=normalize(uCam-vWorld);
   float rim=dot(viewDir,vNorm);
-  float rimFade=smoothstep(0.0,0.25,rim);
+  float rimFade=smoothstep(-0.05,0.08,rim);
 
   float alpha=density*0.75*rimFade;
 
