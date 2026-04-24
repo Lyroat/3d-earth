@@ -394,20 +394,13 @@ for(let lng=-180;lng<180;lng+=15){
 /* ══════════ Procedural Cloud Layer ══════════ */
 const cloudVS=`
 varying vec3 vPos;
-varying vec3 vNorm;
-varying vec3 vWorld;
 void main(){
   vPos=position;
-  vNorm=normalize(normalMatrix*normal);
-  vWorld=(modelMatrix*vec4(position,1.0)).xyz;
   gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
 }`;
 const cloudFS=`
 uniform float uTime;
-uniform vec3 uCam;
 varying vec3 vPos;
-varying vec3 vNorm;
-varying vec3 vWorld;
 
 /* simplex 3D noise */
 vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x,289.0);}
@@ -507,19 +500,14 @@ void main(){
   float thick=smoothstep(0.28,0.7,cloud);
   float brightness=0.88+0.12*thick;
 
-  /* subtle rim fade only at extreme edge */
-  vec3 viewDir=normalize(uCam-vWorld);
-  float rim=dot(viewDir,vNorm);
-  float rimFade=smoothstep(-0.05,0.08,rim);
-
-  float alpha=density*0.75*rimFade;
+  float alpha=density*0.75;
 
   gl_FragColor=vec4(vec3(brightness),alpha);
 }`;
 cloudsMat = new THREE.ShaderMaterial({
   vertexShader:cloudVS,
   fragmentShader:cloudFS,
-  uniforms:{uTime:{value:0.0},uCam:{value:camera.position.clone()}},
+  uniforms:{uTime:{value:0.0}},
   transparent:true, depthWrite:false, side:THREE.FrontSide
 });
 cloudsMesh = new THREE.Mesh(new THREE.SphereGeometry(1.018,128,128),cloudsMat);
@@ -1067,7 +1055,6 @@ function syncRotY(){
   /* cloud animation */
   if(cloudsMat&&cloudsMat.uniforms){
     cloudsMat.uniforms.uTime.value=t;
-    cloudsMat.uniforms.uCam.value.copy(camera.position);
   }
 
   earthMat.uniforms.uCam.value.copy(camera.position);
