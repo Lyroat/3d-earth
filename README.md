@@ -4,7 +4,7 @@
 
 ## 在线体验
 
-部署在 Netlify：[访问链接]（部署后补充）
+🔗 [earth-volcano-3d.vercel.app](https://earth-volcano-3d.vercel.app/)
 
 ## 功能介绍
 
