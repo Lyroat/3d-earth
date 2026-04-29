@@ -4,9 +4,7 @@ import json, os, math
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# ── 1. Earth texture ──
-with open('earth-b64.txt', 'r') as f:
-    b64 = f.read().strip()
+# ── 1. Bump texture (earth textures loaded dynamically per month) ──
 with open('bump-b64.txt', 'r') as f:
     bump_b64 = f.read().strip()
 # ── 2. Plate boundaries (PB2002 steps) ──
@@ -253,10 +251,10 @@ canvas{display:block}
   <span class="hint">拖动旋转 · 滚轮缩放 · 双击放大 · ESC 返回</span>
 </div>
 
+<div id="month-label" style="position:absolute;top:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.6);font-size:13px;letter-spacing:2px;pointer-events:none;z-index:5;text-transform:uppercase"></div>
 <div id="tooltip"></div>
 <div id="cluster-popup"></div>
 
-<img id="earth-tex" style="display:none" src="data:image/jpeg;base64,__B64__" />
 <img id="bump-tex" style="display:none" src="data:image/jpeg;base64,__BUMP_B64__" />
 
 <script type="importmap">
@@ -359,15 +357,30 @@ function mkTex(id){
   const img=document.getElementById(id);
   const t=new THREE.Texture(img);t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;return t;
 }
-function loadAllTex(){
-  const ids=['earth-tex','bump-tex'];
-  const all=ids.map(id=>{const img=document.getElementById(id);return img.complete&&img.naturalWidth>0;});
-  if(!all.every(Boolean)){setTimeout(loadAllTex,50);return;}
-  earthMat.uniforms.uTex.value=mkTex('earth-tex');
+const MONTH_NAMES=['','january','february','march','april','may','june',
+  'july','august','september','october','november','december'];
+const curMonth=new Date().getMonth()+1;
+const texLoader=new THREE.TextureLoader();
+
+function loadBumpTex(){
+  const bumpImg=document.getElementById('bump-tex');
+  if(!bumpImg.complete||bumpImg.naturalWidth===0){setTimeout(loadBumpTex,50);return;}
   earthMat.uniforms.uBumpTex.value=mkTex('bump-tex');
-  document.getElementById('loading').classList.add('hidden');
 }
-loadAllTex();
+loadBumpTex();
+
+function loadMonthTex(month){
+  const mm=String(month).padStart(2,'0');
+  const url='textures/'+mm+'.jpg';
+  document.getElementById('loading').classList.remove('hidden');
+  texLoader.load(url,tex=>{
+    tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
+    earthMat.uniforms.uTex.value=tex;
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('month-label').textContent=MONTH_NAMES[month].charAt(0).toUpperCase()+MONTH_NAMES[month].slice(1);
+  });
+}
+loadMonthTex(curMonth);
 
 /* ══════════ Lat/Lon Grid Overlay ══════════ */
 const gridGroup = new THREE.Group();
@@ -586,6 +599,21 @@ terrainBtn.addEventListener('click',e=>{
   earthMat.uniforms.uBumpScale.value=showBump?0.018:0.0;
 });
 dGrid.appendChild(terrainBtn);
+
+const monthRow=document.createElement('div');
+monthRow.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)';
+const mPrev=document.createElement('button');mPrev.className='chip';mPrev.textContent='◀';mPrev.style.padding='4px 8px';
+const mNext=document.createElement('button');mNext.className='chip';mNext.textContent='▶';mNext.style.padding='4px 8px';
+const mLabel=document.createElement('span');mLabel.style.cssText='color:rgba(255,255,255,.7);font-size:11px;flex:1;text-align:center';
+const MCN=['','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+let activeMonth=curMonth;
+function updateMonthUI(){mLabel.textContent='🌍 '+MCN[activeMonth]+' 地球贴图';}
+updateMonthUI();
+mPrev.addEventListener('click',e=>{e.stopPropagation();activeMonth=activeMonth<=1?12:activeMonth-1;updateMonthUI();loadMonthTex(activeMonth);});
+mNext.addEventListener('click',e=>{e.stopPropagation();activeMonth=activeMonth>=12?1:activeMonth+1;updateMonthUI();loadMonthTex(activeMonth);});
+monthRow.appendChild(mPrev);monthRow.appendChild(mLabel);monthRow.appendChild(mNext);
+dGrid.appendChild(monthRow);
+
 /* ══════════ Plate Split Feature ══════════ */
 const SPLIT_INFO = __PLATE_INFO__;
 const splitParent=new THREE.Group();splitParent.rotation.x=TILT;splitParent.visible=false;scene.add(splitParent);
@@ -936,8 +964,7 @@ function syncRotY(){
 </body>
 </html>'''
 
-html = template.replace('__B64__', b64) \
-               .replace('__BUMP_B64__', bump_b64) \
+html = template.replace('__BUMP_B64__', bump_b64) \
                .replace('__PLATE_DATA__', plate_data_json) \
                .replace('__VOLCANOES__', volcanoes_json) \
                .replace('__PLATE_INFO__', split_json)
