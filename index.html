@@ -471,7 +471,7 @@ const mNext=document.createElement('button');mNext.className='chip';mNext.textCo
 const mLabel=document.createElement('span');mLabel.style.cssText='color:rgba(255,255,255,.7);font-size:11px;flex:1;text-align:center';
 const MCN=['','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 let activeMonth=curMonth;
-function updateMonthUI(){mLabel.textContent='🌍 '+MCN[activeMonth]+' 地球贴图';}
+function updateMonthUI(){mLabel.textContent='🌍 '+MCN[activeMonth]+'的地球';}
 updateMonthUI();
 mPrev.addEventListener('click',e=>{e.stopPropagation();activeMonth=activeMonth<=1?12:activeMonth-1;updateMonthUI();loadMonthTex(activeMonth);});
 mNext.addEventListener('click',e=>{e.stopPropagation();activeMonth=activeMonth>=12?1:activeMonth+1;updateMonthUI();loadMonthTex(activeMonth);});
