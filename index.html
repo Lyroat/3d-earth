@@ -502,10 +502,17 @@ const interiorGroup=new THREE.Group();
 interiorGroup.visible=false;
 scene.add(interiorGroup);
 
-const interiorClipPlanes=[
+/* Earth surface: clipIntersection=true with these → removes only x>0 AND y>0 AND z>0 (1/8) */
+const earthClipPlanes=[
   new THREE.Plane(new THREE.Vector3(-1,0,0),0),
   new THREE.Plane(new THREE.Vector3(0,0,-1),0),
   new THREE.Plane(new THREE.Vector3(0,-1,0),0)
+];
+/* Interior layers: inverted normals + clipIntersection=false → keeps only x>0 AND y>0 AND z>0 (1/8) */
+const interiorClipPlanes=[
+  new THREE.Plane(new THREE.Vector3(1,0,0),0),
+  new THREE.Plane(new THREE.Vector3(0,0,1),0),
+  new THREE.Plane(new THREE.Vector3(0,1,0),0)
 ];
 
 const layerVS=`
@@ -547,7 +554,7 @@ LAYERS.forEach(L=>{
     vertexShader:layerVS,fragmentShader:layerFS,
     uniforms:{uColor:{value:new THREE.Color(L.color)},uInnerR:{value:L.rInner},uOuterR:{value:L.rOuter}},
     side:THREE.DoubleSide, transparent:true,
-    clipping:true, clippingPlanes:interiorClipPlanes, clipIntersection:true
+    clipping:true, clippingPlanes:interiorClipPlanes, clipIntersection:false
   });
   const mesh=new THREE.Mesh(geo,mat);
   mesh.userData=L;
@@ -664,13 +671,15 @@ function toggleInterior(){
     volcanoGroup.visible=false;
     boundaryGroup.visible=false;
     gridGroup.visible=false;
-    earthMat.clippingPlanes=interiorClipPlanes;
+    earthMat.clippingPlanes=earthClipPlanes;
+    earthMat.clipIntersection=true;
     earthMat.needsUpdate=true;
   }else{
     volcanoGroup.visible=true;
     boundaryGroup.visible=true;
     gridGroup.visible=true;
     earthMat.clippingPlanes=[];
+    earthMat.clipIntersection=false;
     earthMat.needsUpdate=true;
   }
 }
