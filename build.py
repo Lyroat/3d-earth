@@ -695,43 +695,46 @@ const csXZ=makeCSPlane([0,0,0]);
 const csXY=makeCSPlane([-Math.PI/2,0,0]);
 const csYZ=makeCSPlane([0,Math.PI/2,0]);
 
-/* layer labels - all pulled to right side with leader lines */
+/* layer labels - leader lines: 45° up-right then horizontal */
 const labelSprites=[];
 function makeLabelSprite(text,position,layerData){
-  const cv=document.createElement('canvas');cv.width=512;cv.height=80;
+  const cv=document.createElement('canvas');cv.width=512;cv.height=64;
   const ctx=cv.getContext('2d');
-  ctx.font='bold 48px sans-serif';ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';
-  ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowBlur=6;
-  ctx.fillText(text,8,40);
+  ctx.font='300 44px sans-serif';
+  ctx.fillStyle='rgba(255,255,255,0.6)';
+  ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.letterSpacing='2px';
+  ctx.fillText(text,8,32);
   const tex=new THREE.CanvasTexture(cv);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
-  sp.scale.set(0.55,0.09,1);
+  sp.scale.set(0.55,0.08,1);
   sp.position.copy(position);
   sp.userData=layerData;
   interiorGroup.add(sp);
   labelSprites.push(sp);
   return sp;
 }
-function makeLeaderLine(from,to){
-  const pts=[from,to];
-  const geo=new THREE.BufferGeometry().setFromPoints(pts);
-  const mat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.7});
+function makeLeaderLine(points){
+  const geo=new THREE.BufferGeometry().setFromPoints(points);
+  const mat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.4});
   const line=new THREE.Line(geo,mat);
   interiorGroup.add(line);
 }
 
-const LABEL_X=1.25;
-const LABEL_TOP=0.75;
-const LABEL_SPACING=0.18;
+const LABEL_X=1.35;
+const LABEL_TOP=0.85;
+const LABEL_SPACING=0.19;
 LAYERS.forEach((L,i)=>{
   const midR=(L.rOuter+L.rInner)/2;
-  const anchorAngle=Math.PI/4;
-  const ax=midR*Math.sin(anchorAngle)*0.71;
-  const ay=midR*Math.cos(anchorAngle)*0.71;
+  const ax=midR*0.5;
+  const ay=midR*0.5;
   const labelY=LABEL_TOP-i*LABEL_SPACING;
+  const midX=ax+(LABEL_X-ax)*0.4;
+  const midY=ay+(labelY-ay)*1.0;
+  const knee=new THREE.Vector3(midX, labelY, 0);
   const from=new THREE.Vector3(ax,ay,0);
   const to=new THREE.Vector3(LABEL_X,labelY,0);
-  makeLeaderLine(from,to);
+  makeLeaderLine([from,knee,to]);
   makeLabelSprite(L.name,new THREE.Vector3(LABEL_X+0.03,labelY,0),L);
 });
 
