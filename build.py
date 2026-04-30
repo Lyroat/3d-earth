@@ -657,11 +657,16 @@ void main(){
   if(vPos.x<0.0||vPos.y<0.0||vPos.z<0.0) discard;
   float r=length(vPos);
   float t=(r-uInnerR)/(uOuterR-uInnerR);
-  float n=noise3d(vPos*12.0)*0.15+noise3d(vPos*25.0)*0.08;
-  vec3 c=uColor*(0.7+0.3*t+n);
-  float edge=1.0-pow(abs(dot(vNorm,vec3(0,0,1))),0.3)*0.15;
-  c*=edge;
-  gl_FragColor=vec4(c,0.97);
+  float n1=noise3d(vPos*8.0)*0.18;
+  float n2=noise3d(vPos*20.0)*0.1;
+  float n3=noise3d(vPos*50.0)*0.05;
+  vec3 darkC=uColor*0.55;
+  vec3 lightC=uColor*1.2;
+  vec3 c=mix(darkC,lightC,t+n1);
+  c+=vec3(n2+n3)*0.5;
+  float rim=1.0-abs(dot(normalize(vNorm),normalize(vPos)));
+  c+=uColor*rim*0.3;
+  gl_FragColor=vec4(c,0.96);
 }`;
 
 const layerMeshes=[];
@@ -729,16 +734,17 @@ const csYZ=makeCSPlane([0,Math.PI/2,0]);
 
 /* layer labels with leader lines for thin layers */
 const labelSprites=[];
-function makeLabelSprite(text,position,scale){
-  const cv=document.createElement('canvas');cv.width=512;cv.height=64;
+function makeLabelSprite(text,position,scale,layerData){
+  const cv=document.createElement('canvas');cv.width=512;cv.height=80;
   const ctx=cv.getContext('2d');
-  ctx.font='bold 26px sans-serif';ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';
-  ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=5;
-  ctx.fillText(text,8,32);
+  ctx.font='bold 48px sans-serif';ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowBlur=6;
+  ctx.fillText(text,8,40);
   const tex=new THREE.CanvasTexture(cv);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
-  sp.scale.set(scale||0.4,0.055,1);
+  sp.scale.set(scale||0.6,0.1,1);
   sp.position.copy(position);
+  sp.userData=layerData;
   interiorGroup.add(sp);
   labelSprites.push(sp);
   return sp;
@@ -746,31 +752,30 @@ function makeLabelSprite(text,position,scale){
 function makeLeaderLine(from,to){
   const pts=[from,to];
   const geo=new THREE.BufferGeometry().setFromPoints(pts);
-  const mat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.6});
+  const mat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.7});
   const line=new THREE.Line(geo,mat);
   interiorGroup.add(line);
 }
 
-const labelOffset=1.18;
 const DIR=Math.PI/4;
+const DX=Math.sin(DIR)*0.71;
+const DY=Math.cos(DIR)*0.71;
 LAYERS.forEach((L,i)=>{
   const midR=(L.rOuter+L.rInner)/2;
-  const isNarrow=(L.rOuter-L.rInner)<0.03;
+  const isNarrow=(L.rOuter-L.rInner)<0.06;
   if(isNarrow){
-    const anchorR=midR;
-    const ax=anchorR*Math.sin(DIR)*0.71;
-    const ay=anchorR*Math.cos(DIR)*0.71;
-    const endR=labelOffset+i*0.09;
-    const ex=endR*Math.sin(DIR)*0.71;
-    const ey=endR*Math.cos(DIR)*0.71;
-    const from=new THREE.Vector3(ax,ay,0);
-    const to=new THREE.Vector3(ex,ey,0);
-    makeLeaderLine(from,to);
-    makeLabelSprite(L.name,new THREE.Vector3(ex+0.05,ey,0),0.3);
+    const anchorR=L.rOuter;
+    const ax=anchorR*DX;
+    const ay=anchorR*DY;
+    const endX=1.15+i*0.12;
+    const ex=endX*DX;
+    const ey=endX*DY;
+    makeLeaderLine(new THREE.Vector3(ax,ay,0),new THREE.Vector3(ex,ey,0));
+    makeLabelSprite(L.name,new THREE.Vector3(ex+0.02,ey,0),0.5,L);
   }else{
-    const x=midR*Math.sin(DIR)*0.71;
-    const y=midR*Math.cos(DIR)*0.71;
-    makeLabelSprite(L.name,new THREE.Vector3(x,y,0));
+    const x=midR*DX;
+    const y=midR*DY;
+    makeLabelSprite(L.name,new THREE.Vector3(x,y,0),0.6,L);
   }
 });
 
@@ -799,21 +804,19 @@ document.getElementById('tb-interior').addEventListener('click',e=>{
   e.stopPropagation();toggleInterior();
 });
 
-/* interior hover interaction */
+/* interior hover interaction - detect label sprites */
 function interiorHover(raycaster,ex,ey){
   if(!interiorMode)return false;
-  let closest=null,cDist=Infinity;
-  for(const mesh of layerMeshes){
-    const hits=raycaster.intersectObject(mesh);
-    if(hits.length>0&&hits[0].distance<cDist){cDist=hits[0].distance;closest=mesh;}
-  }
-  if(closest){
-    const L=closest.userData;
-    const tipContent=`<b>${L.name}</b>（${L.nameEn}）<br>深度：${L.depth}<br>温度：${L.temp}<br>组成：${L.comp}<br>状态：${L.state}`;
-    tooltipEl.innerHTML=tipContent;
-    posEl(tooltipEl,ex,ey);
-    document.body.style.cursor='pointer';
-    return true;
+  const hits=raycaster.intersectObjects(labelSprites);
+  if(hits.length>0){
+    const L=hits[0].object.userData;
+    if(L&&L.name){
+      const tipContent=`<b>${L.name}</b>（${L.nameEn}）<br>深度：${L.depth}<br>温度：${L.temp}<br>组成：${L.comp}<br>状态：${L.state}`;
+      tooltipEl.innerHTML=tipContent;
+      posEl(tooltipEl,ex,ey);
+      document.body.style.cursor='pointer';
+      return true;
+    }
   }
   return false;
 }
