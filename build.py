@@ -695,9 +695,9 @@ const csXZ=makeCSPlane([0,0,0]);
 const csXY=makeCSPlane([-Math.PI/2,0,0]);
 const csYZ=makeCSPlane([0,Math.PI/2,0]);
 
-/* layer labels with leader lines for thin layers */
+/* layer labels - all pulled to right side with leader lines */
 const labelSprites=[];
-function makeLabelSprite(text,position,scale,layerData){
+function makeLabelSprite(text,position,layerData){
   const cv=document.createElement('canvas');cv.width=512;cv.height=80;
   const ctx=cv.getContext('2d');
   ctx.font='bold 48px sans-serif';ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';
@@ -705,7 +705,7 @@ function makeLabelSprite(text,position,scale,layerData){
   ctx.fillText(text,8,40);
   const tex=new THREE.CanvasTexture(cv);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
-  sp.scale.set(scale||0.6,0.1,1);
+  sp.scale.set(0.55,0.09,1);
   sp.position.copy(position);
   sp.userData=layerData;
   interiorGroup.add(sp);
@@ -720,26 +720,19 @@ function makeLeaderLine(from,to){
   interiorGroup.add(line);
 }
 
-const DIR=Math.PI/4;
-const DX=Math.sin(DIR)*0.71;
-const DY=Math.cos(DIR)*0.71;
+const LABEL_X=1.25;
+const LABEL_TOP=0.75;
+const LABEL_SPACING=0.18;
 LAYERS.forEach((L,i)=>{
   const midR=(L.rOuter+L.rInner)/2;
-  const isNarrow=(L.rOuter-L.rInner)<0.06;
-  if(isNarrow){
-    const anchorR=L.rOuter;
-    const ax=anchorR*DX;
-    const ay=anchorR*DY;
-    const endX=1.15+i*0.12;
-    const ex=endX*DX;
-    const ey=endX*DY;
-    makeLeaderLine(new THREE.Vector3(ax,ay,0),new THREE.Vector3(ex,ey,0));
-    makeLabelSprite(L.name,new THREE.Vector3(ex+0.02,ey,0),0.5,L);
-  }else{
-    const x=midR*DX;
-    const y=midR*DY;
-    makeLabelSprite(L.name,new THREE.Vector3(x,y,0),0.6,L);
-  }
+  const anchorAngle=Math.PI/4;
+  const ax=midR*Math.sin(anchorAngle)*0.71;
+  const ay=midR*Math.cos(anchorAngle)*0.71;
+  const labelY=LABEL_TOP-i*LABEL_SPACING;
+  const from=new THREE.Vector3(ax,ay,0);
+  const to=new THREE.Vector3(LABEL_X,labelY,0);
+  makeLeaderLine(from,to);
+  makeLabelSprite(L.name,new THREE.Vector3(LABEL_X+0.03,labelY,0),L);
 });
 
 /* interior mode toggle */
