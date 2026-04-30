@@ -718,7 +718,7 @@ function makeLeaderLine(points){
   const pts=[];
   points.forEach(p=>{pts.push(p.x,p.y,p.z);});
   const geo=new LineGeometry();geo.setPositions(pts);
-  const mat=new LineMaterial({color:0xffffff,linewidth:2,transparent:true,opacity:0.5,resolution});
+  const mat=new LineMaterial({color:0xffffff,linewidth:4,transparent:true,opacity:0.5,resolution});
   const line=new Line2(geo,mat);line.computeLineDistances();
   interiorGroup.add(line);allLineMats.push(mat);
 }
@@ -744,7 +744,7 @@ LAYERS.forEach((L,i)=>{
   const knee=new THREE.Vector3(kneeX, cfg.labelY, 0);
   const to=new THREE.Vector3(LABEL_X, cfg.labelY, 0);
   makeLeaderLine([from,knee,to]);
-  makeLabelSprite(L.name,new THREE.Vector3(LABEL_X+0.03, cfg.labelY, 0),L);
+  makeLabelSprite(L.name,new THREE.Vector3(LABEL_X+1.03, cfg.labelY, 0),L);
 });
 
 /* interior mode toggle */
