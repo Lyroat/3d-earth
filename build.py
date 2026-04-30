@@ -354,7 +354,9 @@ const earthMat = new THREE.ShaderMaterial({
       gl_FragColor = vec4(c, uOpacity);
     }`,
   transparent: true,
-  clipping: true
+  clipping: true,
+  clippingPlanes: [],
+  clipIntersection: true
 });
 const earth = new THREE.Mesh(earthGeo, earthMat);
 earth.rotation.x = TILT;
@@ -808,15 +810,11 @@ function toggleInterior(){
     boundaryGroup.visible=false;
     gridGroup.visible=false;
     earthMat.clippingPlanes=earthClipPlanes;
-    earthMat.clipIntersection=true;
-    earthMat.needsUpdate=true;
   }else{
     volcanoGroup.visible=true;
     boundaryGroup.visible=true;
     gridGroup.visible=true;
     earthMat.clippingPlanes=[];
-    earthMat.clipIntersection=false;
-    earthMat.needsUpdate=true;
   }
 }
 document.getElementById('tb-interior').addEventListener('click',e=>{
