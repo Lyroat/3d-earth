@@ -636,52 +636,7 @@ interiorGroup.visible=false;
 scene.add(interiorGroup);
 
 
-const layerVS=`
-varying vec3 vPos;varying vec3 vNorm;
-void main(){
-  vPos=position;vNorm=normalize(normalMatrix*normal);
-  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
-}`;
-const layerFS=`
-uniform vec3 uColor;uniform float uInnerR;uniform float uOuterR;
-varying vec3 vPos;varying vec3 vNorm;
-float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
-float noise3d(vec3 p){
-  vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
-  return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),
-    mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
-    mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),
-    mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
-}
-void main(){
-  if(vPos.x<0.0||vPos.y<0.0||vPos.z<0.0) discard;
-  float r=length(vPos);
-  float t=(r-uInnerR)/(uOuterR-uInnerR);
-  float n1=noise3d(vPos*8.0)*0.18;
-  float n2=noise3d(vPos*20.0)*0.1;
-  float n3=noise3d(vPos*50.0)*0.05;
-  vec3 darkC=uColor*0.55;
-  vec3 lightC=uColor*1.2;
-  vec3 c=mix(darkC,lightC,t+n1);
-  c+=vec3(n2+n3)*0.5;
-  float rim=1.0-abs(dot(normalize(vNorm),normalize(vPos)));
-  c+=uColor*rim*0.3;
-  gl_FragColor=vec4(c,0.96);
-}`;
-
 const layerMeshes=[];
-LAYERS.forEach(L=>{
-  const geo=new THREE.SphereGeometry(L.rOuter,96,96);
-  const mat=new THREE.ShaderMaterial({
-    vertexShader:layerVS,fragmentShader:layerFS,
-    uniforms:{uColor:{value:new THREE.Color(L.color)},uInnerR:{value:L.rInner},uOuterR:{value:L.rOuter}},
-    side:THREE.DoubleSide, transparent:true
-  });
-  const mesh=new THREE.Mesh(geo,mat);
-  mesh.userData=L;
-  interiorGroup.add(mesh);
-  layerMeshes.push(mesh);
-});
 
 /* cross-section shader (concentric rings on cutting planes) */
 const csVS=`varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
@@ -697,6 +652,7 @@ float noise2d(vec2 p){
 }
 void main(){
   float r=length(vPos);
+  if(r>1.0) discard;
   vec3 c=uColors[6];
   float t=0.0;
   for(int i=0;i<7;i++){
@@ -706,9 +662,16 @@ void main(){
       break;
     }
   }
-  float n=noise2d(vPos.xy*20.0)*0.12+noise2d(vPos.xy*40.0)*0.06;
-  c=c*(0.8+0.2*t+n);
-  gl_FragColor=vec4(c,0.97);
+  float n1=noise2d(vPos.xy*15.0)*0.1;
+  float n2=noise2d(vPos.xy*40.0)*0.06;
+  float n3=noise2d(vPos.xy*80.0)*0.03;
+  vec3 darkC=c*0.6;
+  vec3 lightC=c*1.3;
+  c=mix(darkC,lightC,t*0.7+n1+0.3);
+  c+=vec3(n2+n3)*0.4;
+  float edge=smoothstep(0.0,0.02,abs(r-uRadii[1]))*smoothstep(0.0,0.02,abs(r-uRadii[2]))*smoothstep(0.0,0.02,abs(r-uRadii[3]))*smoothstep(0.0,0.02,abs(r-uRadii[4]))*smoothstep(0.0,0.02,abs(r-uRadii[5]))*smoothstep(0.0,0.02,abs(r-uRadii[6]));
+  c*=mix(0.4,1.0,edge);
+  gl_FragColor=vec4(c,1.0);
 }`;
 const csRadii=[1.0,0.995,0.984,0.957,0.896,0.546,0.192,0.0];
 const csColors=LAYERS.map(L=>new THREE.Color(L.color));
@@ -1148,7 +1111,7 @@ function syncRotY(){
     camera.position.setFromSpherical(sph);camera.lookAt(controls.target);
     if(done){navAnim=null;controls.enabled=true;controls.update();}
   }else{
-    if(autoRotate){earth.rotation.y+=0.001;syncRotY();}
+    if(autoRotate&&!interiorMode){earth.rotation.y+=0.001;syncRotY();}
     controls.update();
   }
 
