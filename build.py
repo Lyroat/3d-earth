@@ -721,21 +721,35 @@ function makeLeaderLine(points){
   interiorGroup.add(line);
 }
 
-const LABEL_X=1.35;
-const LABEL_TOP=0.85;
-const LABEL_SPACING=0.19;
+/*
+  Anchors on the z=0 cross-section at 45° (visible face from front).
+  Lines go: anchor → 45° up-right → horizontal to label.
+  All in z=0 plane so they stay on the visible cross-section.
+  Adjust anchorX/anchorY/kneeX/kneeY/labelY per layer to avoid crossing Earth.
+*/
+const LABEL_RIGHT=1.45;
+const labelCfg=[
+  {aR:0.998, labelY:0.82},
+  {aR:0.990, labelY:0.66},
+  {aR:0.970, labelY:0.50},
+  {aR:0.926, labelY:0.34},
+  {aR:0.720, labelY:0.14},
+  {aR:0.370, labelY:-0.08},
+  {aR:0.096, labelY:-0.28}
+];
 LAYERS.forEach((L,i)=>{
+  const cfg=labelCfg[i];
   const midR=(L.rOuter+L.rInner)/2;
-  const ax=midR*0.5;
-  const ay=midR*0.5;
-  const labelY=LABEL_TOP-i*LABEL_SPACING;
-  const midX=ax+(LABEL_X-ax)*0.4;
-  const midY=ay+(labelY-ay)*1.0;
-  const knee=new THREE.Vector3(midX, labelY, 0);
+  const angle=Math.PI*0.28;
+  const ax=midR*Math.cos(angle);
+  const ay=midR*Math.sin(angle);
+  const kneeX=ax+(cfg.labelY-ay>0?0.15:0.1);
+  const kneeY=cfg.labelY;
   const from=new THREE.Vector3(ax,ay,0);
-  const to=new THREE.Vector3(LABEL_X,labelY,0);
+  const knee=new THREE.Vector3(LABEL_RIGHT-0.05, cfg.labelY, 0);
+  const to=new THREE.Vector3(LABEL_RIGHT, cfg.labelY, 0);
   makeLeaderLine([from,knee,to]);
-  makeLabelSprite(L.name,new THREE.Vector3(LABEL_X+0.03,labelY,0),L);
+  makeLabelSprite(L.name,new THREE.Vector3(LABEL_RIGHT+0.02, cfg.labelY, 0),L);
 });
 
 /* interior mode toggle */
