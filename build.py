@@ -645,12 +645,16 @@ const interiorClipPlanes=[
 ];
 
 const layerVS=`
+#include <clipping_planes_pars_vertex>
 varying vec3 vPos;varying vec3 vNorm;
 void main(){
   vPos=position;vNorm=normalize(normalMatrix*normal);
-  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+  vec4 mvPos=modelViewMatrix*vec4(position,1.0);
+  gl_Position=projectionMatrix*mvPos;
+  #include <clipping_planes_vertex>
 }`;
 const layerFS=`
+#include <clipping_planes_pars_fragment>
 uniform vec3 uColor;uniform float uInnerR;uniform float uOuterR;
 varying vec3 vPos;varying vec3 vNorm;
 float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
@@ -662,6 +666,7 @@ float noise3d(vec3 p){
     mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
 }
 void main(){
+  #include <clipping_planes_fragment>
   float r=length(vPos);
   float t=(r-uInnerR)/(uOuterR-uInnerR);
   float n=noise3d(vPos*12.0)*0.15+noise3d(vPos*25.0)*0.08;
@@ -677,7 +682,8 @@ LAYERS.forEach(L=>{
   const mat=new THREE.ShaderMaterial({
     vertexShader:layerVS,fragmentShader:layerFS,
     uniforms:{uColor:{value:new THREE.Color(L.color)},uInnerR:{value:L.rInner},uOuterR:{value:L.rOuter}},
-    side:THREE.DoubleSide, transparent:true
+    side:THREE.DoubleSide, transparent:true,
+    clipping:true, clippingPlanes:interiorClipPlanes, clipIntersection:true
   });
   const mesh=new THREE.Mesh(geo,mat);
   mesh.userData=L;
