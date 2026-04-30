@@ -644,12 +644,40 @@ const interiorClipPlanes=[
   new THREE.Plane(new THREE.Vector3(0,-1,0),0)
 ];
 
+const layerVS=`
+varying vec3 vPos;varying vec3 vNorm;
+void main(){
+  vPos=position;vNorm=normalize(normalMatrix*normal);
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+}`;
+const layerFS=`
+uniform vec3 uColor;uniform float uInnerR;uniform float uOuterR;
+varying vec3 vPos;varying vec3 vNorm;
+float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+float noise3d(vec3 p){
+  vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
+  return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),
+    mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+    mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),
+    mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
+}
+void main(){
+  float r=length(vPos);
+  float t=(r-uInnerR)/(uOuterR-uInnerR);
+  float n=noise3d(vPos*12.0)*0.15+noise3d(vPos*25.0)*0.08;
+  vec3 c=uColor*(0.7+0.3*t+n);
+  float edge=1.0-pow(abs(dot(vNorm,vec3(0,0,1))),0.3)*0.15;
+  c*=edge;
+  gl_FragColor=vec4(c,0.97);
+}`;
+
 const layerMeshes=[];
 LAYERS.forEach(L=>{
   const geo=new THREE.SphereGeometry(L.rOuter,96,96);
-  const mat=new THREE.MeshBasicMaterial({
-    color:L.color, side:THREE.DoubleSide, transparent:true, opacity:0.92,
-    clippingPlanes:interiorClipPlanes, clipIntersection:false
+  const mat=new THREE.ShaderMaterial({
+    vertexShader:layerVS,fragmentShader:layerFS,
+    uniforms:{uColor:{value:new THREE.Color(L.color)},uInnerR:{value:L.rInner},uOuterR:{value:L.rOuter}},
+    side:THREE.DoubleSide, transparent:true
   });
   const mesh=new THREE.Mesh(geo,mat);
   mesh.userData=L;
@@ -663,13 +691,26 @@ const csFS=`
 uniform vec3 uColors[7];
 uniform float uRadii[8];
 varying vec3 vPos;
+float hash2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise2d(vec2 p){
+  vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
+  return mix(mix(hash2(i),hash2(i+vec2(1,0)),f.x),
+    mix(hash2(i+vec2(0,1)),hash2(i+vec2(1,1)),f.x),f.y);
+}
 void main(){
   float r=length(vPos);
   vec3 c=uColors[6];
+  float t=0.0;
   for(int i=0;i<7;i++){
-    if(r>=uRadii[i+1]&&r<=uRadii[i]){c=uColors[i];break;}
+    if(r>=uRadii[i+1]&&r<=uRadii[i]){
+      c=uColors[i];
+      t=(r-uRadii[i+1])/(uRadii[i]-uRadii[i+1]);
+      break;
+    }
   }
-  gl_FragColor=vec4(c,0.95);
+  float n=noise2d(vPos.xy*20.0)*0.12+noise2d(vPos.xy*40.0)*0.06;
+  c=c*(0.8+0.2*t+n);
+  gl_FragColor=vec4(c,0.97);
 }`;
 const csRadii=[1.0,0.995,0.984,0.957,0.896,0.546,0.192,0.0];
 const csColors=LAYERS.map(L=>new THREE.Color(L.color));
@@ -693,29 +734,51 @@ const csXZ=makeCSPlane([0,0,0]);
 const csXY=makeCSPlane([-Math.PI/2,0,0]);
 const csYZ=makeCSPlane([0,Math.PI/2,0]);
 
-/* layer labels */
+/* layer labels with leader lines for thin layers */
 const labelSprites=[];
-function makeLabelSprite(text,position){
-  const cv=document.createElement('canvas');cv.width=256;cv.height=64;
+function makeLabelSprite(text,position,scale){
+  const cv=document.createElement('canvas');cv.width=512;cv.height=64;
   const ctx=cv.getContext('2d');
-  ctx.font='bold 28px sans-serif';ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=4;
-  ctx.fillText(text,128,32);
+  ctx.font='bold 26px sans-serif';ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=5;
+  ctx.fillText(text,8,32);
   const tex=new THREE.CanvasTexture(cv);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
-  sp.scale.set(0.35,0.09,1);
+  sp.scale.set(scale||0.4,0.055,1);
   sp.position.copy(position);
   interiorGroup.add(sp);
   labelSprites.push(sp);
   return sp;
 }
-LAYERS.forEach(L=>{
+function makeLeaderLine(from,to){
+  const pts=[from,to];
+  const geo=new THREE.BufferGeometry().setFromPoints(pts);
+  const mat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.6});
+  const line=new THREE.Line(geo,mat);
+  interiorGroup.add(line);
+}
+
+const labelOffset=1.18;
+const DIR=Math.PI/4;
+LAYERS.forEach((L,i)=>{
   const midR=(L.rOuter+L.rInner)/2;
-  const angle=Math.PI/4;
-  const x=midR*Math.sin(angle)*0.7;
-  const y=midR*Math.cos(angle)*0.7;
-  const z=midR*0.1;
-  makeLabelSprite(L.name,new THREE.Vector3(x,y,z));
+  const isNarrow=(L.rOuter-L.rInner)<0.03;
+  if(isNarrow){
+    const anchorR=midR;
+    const ax=anchorR*Math.sin(DIR)*0.71;
+    const ay=anchorR*Math.cos(DIR)*0.71;
+    const endR=labelOffset+i*0.09;
+    const ex=endR*Math.sin(DIR)*0.71;
+    const ey=endR*Math.cos(DIR)*0.71;
+    const from=new THREE.Vector3(ax,ay,0);
+    const to=new THREE.Vector3(ex,ey,0);
+    makeLeaderLine(from,to);
+    makeLabelSprite(L.name,new THREE.Vector3(ex+0.05,ey,0),0.3);
+  }else{
+    const x=midR*Math.sin(DIR)*0.71;
+    const y=midR*Math.cos(DIR)*0.71;
+    makeLabelSprite(L.name,new THREE.Vector3(x,y,0));
+  }
 });
 
 /* interior mode toggle */
