@@ -248,6 +248,8 @@ canvas{display:block}
     </div>
   </div>
 
+  <button class="tb-btn" id="tb-interior">🌐 地球内部</button>
+
   <span class="hint">拖动旋转 · 滚轮缩放 · 双击放大 · ESC 返回</span>
 </div>
 
@@ -303,6 +305,7 @@ camera.position.set(0, 0, 3);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.localClippingEnabled=true;
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -323,6 +326,7 @@ const earthMat = new THREE.ShaderMaterial({
     uBumpScale:{value:0.0}
   },
   vertexShader: `
+    #include <clipping_planes_pars_vertex>
     uniform sampler2D uBumpTex; uniform float uBumpScale;
     varying vec2 vUv; varying vec3 vNorm; varying vec3 vWPos;
     void main(){
@@ -331,13 +335,17 @@ const earthMat = new THREE.ShaderMaterial({
       vec3 pos = position + normal * bump * uBumpScale;
       vNorm = normalize(normalMatrix * normal);
       vWPos = (modelMatrix * vec4(pos,1.0)).xyz;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.0);
+      vec4 mvPos = modelViewMatrix * vec4(pos,1.0);
+      gl_Position = projectionMatrix * mvPos;
+      #include <clipping_planes_vertex>
     }`,
   fragmentShader: `
+    #include <clipping_planes_pars_fragment>
     uniform sampler2D uTex;
     uniform vec3 uCam; uniform float uOpacity;
     varying vec2 vUv; varying vec3 vNorm; varying vec3 vWPos;
     void main(){
+      #include <clipping_planes_fragment>
       vec3 c = texture2D(uTex, vUv).rgb;
       float gridU = abs(fract(vUv.x * 36.0) - 0.5) * 2.0;
       float gridV = abs(fract(vUv.y * 18.0) - 0.5) * 2.0;
@@ -345,7 +353,8 @@ const earthMat = new THREE.ShaderMaterial({
       c += grid * vec3(0.015, 0.045, 0.09);
       gl_FragColor = vec4(c, uOpacity);
     }`,
-  transparent: true
+  transparent: true,
+  clipping: true
 });
 const earth = new THREE.Mesh(earthGeo, earthMat);
 earth.rotation.x = TILT;
@@ -614,6 +623,147 @@ mNext.addEventListener('click',e=>{e.stopPropagation();activeMonth=activeMonth>=
 monthRow.appendChild(mPrev);monthRow.appendChild(mLabel);monthRow.appendChild(mNext);
 dGrid.appendChild(monthRow);
 
+/* ══════════ Earth Interior Layers ══════════ */
+const LAYERS=[
+  {name:'地壳',nameEn:'Crust',rOuter:1.0,rInner:0.995,color:0x8B4513,depth:'0~35 km',temp:'~400°C',comp:'硅铝质/硅镁质岩石',state:'固态'},
+  {name:'岩石圈地幔',nameEn:'Lithospheric Mantle',rOuter:0.995,rInner:0.984,color:0x556B2F,depth:'35~100 km',temp:'400~600°C',comp:'橄榄岩（富铁镁矿物）',state:'固态'},
+  {name:'软流圈',nameEn:'Asthenosphere',rOuter:0.984,rInner:0.957,color:0xCC4400,depth:'100~270 km',temp:'600~900°C',comp:'部分熔融橄榄岩',state:'塑性/半熔融'},
+  {name:'上地幔过渡区',nameEn:'Transition Zone',rOuter:0.957,rInner:0.896,color:0xE65C00,depth:'270~660 km',temp:'900~1600°C',comp:'高压矿物（瓦兹利石、林伍德石）',state:'固态（高压）'},
+  {name:'下地幔',nameEn:'Lower Mantle',rOuter:0.896,rInner:0.546,color:0xB22222,depth:'660~2891 km',temp:'1600~3700°C',comp:'钙钛矿型硅酸盐',state:'固态（高压蠕变）'},
+  {name:'外核',nameEn:'Outer Core',rOuter:0.546,rInner:0.192,color:0xFF8C00,depth:'2891~5150 km',temp:'3700~5000°C',comp:'铁镍合金',state:'液态'},
+  {name:'内核',nameEn:'Inner Core',rOuter:0.192,rInner:0.0,color:0xFFD700,depth:'5150~6371 km',temp:'5000~6000°C',comp:'固态铁镍合金',state:'固态（极高压）'}
+];
+
+const interiorGroup=new THREE.Group();
+interiorGroup.visible=false;
+scene.add(interiorGroup);
+
+const interiorClipPlanes=[
+  new THREE.Plane(new THREE.Vector3(-1,0,0),0),
+  new THREE.Plane(new THREE.Vector3(0,0,-1),0),
+  new THREE.Plane(new THREE.Vector3(0,-1,0),0)
+];
+
+const layerMeshes=[];
+LAYERS.forEach(L=>{
+  const geo=new THREE.SphereGeometry(L.rOuter,96,96);
+  const mat=new THREE.MeshBasicMaterial({
+    color:L.color, side:THREE.DoubleSide, transparent:true, opacity:0.92,
+    clippingPlanes:interiorClipPlanes, clipIntersection:false
+  });
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.userData=L;
+  interiorGroup.add(mesh);
+  layerMeshes.push(mesh);
+});
+
+/* cross-section shader (concentric rings on cutting planes) */
+const csVS=`varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+const csFS=`
+uniform vec3 uColors[7];
+uniform float uRadii[8];
+varying vec3 vPos;
+void main(){
+  float r=length(vPos);
+  vec3 c=uColors[6];
+  for(int i=0;i<7;i++){
+    if(r>=uRadii[i+1]&&r<=uRadii[i]){c=uColors[i];break;}
+  }
+  gl_FragColor=vec4(c,0.95);
+}`;
+const csRadii=[1.0,0.995,0.984,0.957,0.896,0.546,0.192,0.0];
+const csColors=LAYERS.map(L=>new THREE.Color(L.color));
+const csMat=new THREE.ShaderMaterial({
+  vertexShader:csVS,fragmentShader:csFS,
+  uniforms:{uColors:{value:csColors},uRadii:{value:csRadii}},
+  side:THREE.DoubleSide, transparent:true
+});
+
+const crossSectionGroup=new THREE.Group();
+crossSectionGroup.visible=false;
+scene.add(crossSectionGroup);
+function makeCSPlane(rotation){
+  const geo=new THREE.CircleGeometry(1.0,128);
+  const mesh=new THREE.Mesh(geo,csMat);
+  mesh.rotation.set(...rotation);
+  crossSectionGroup.add(mesh);
+  return mesh;
+}
+const csXZ=makeCSPlane([0,0,0]);
+const csXY=makeCSPlane([-Math.PI/2,0,0]);
+const csYZ=makeCSPlane([0,Math.PI/2,0]);
+
+/* layer labels */
+const labelSprites=[];
+function makeLabelSprite(text,position){
+  const cv=document.createElement('canvas');cv.width=256;cv.height=64;
+  const ctx=cv.getContext('2d');
+  ctx.font='bold 28px sans-serif';ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=4;
+  ctx.fillText(text,128,32);
+  const tex=new THREE.CanvasTexture(cv);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
+  sp.scale.set(0.35,0.09,1);
+  sp.position.copy(position);
+  interiorGroup.add(sp);
+  labelSprites.push(sp);
+  return sp;
+}
+LAYERS.forEach(L=>{
+  const midR=(L.rOuter+L.rInner)/2;
+  const angle=Math.PI/4;
+  const x=midR*Math.sin(angle)*0.7;
+  const y=midR*Math.cos(angle)*0.7;
+  const z=midR*0.1;
+  makeLabelSprite(L.name,new THREE.Vector3(x,y,z));
+});
+
+/* interior mode toggle */
+let interiorMode=false;
+function toggleInterior(){
+  interiorMode=!interiorMode;
+  interiorGroup.visible=interiorMode;
+  crossSectionGroup.visible=interiorMode;
+  const btn=document.getElementById('tb-interior');
+  btn.classList.toggle('active',interiorMode);
+
+  if(interiorMode){
+    volcanoGroup.visible=false;
+    boundaryGroup.visible=false;
+    gridGroup.visible=false;
+    earthMat.clippingPlanes=interiorClipPlanes;
+    earthMat.needsUpdate=true;
+  }else{
+    volcanoGroup.visible=true;
+    boundaryGroup.visible=true;
+    gridGroup.visible=true;
+    earthMat.clippingPlanes=[];
+    earthMat.needsUpdate=true;
+  }
+}
+document.getElementById('tb-interior').addEventListener('click',e=>{
+  e.stopPropagation();toggleInterior();
+});
+
+/* interior hover interaction */
+function interiorHover(raycaster,ex,ey){
+  if(!interiorMode)return false;
+  let closest=null,cDist=Infinity;
+  for(const mesh of layerMeshes){
+    const hits=raycaster.intersectObject(mesh);
+    if(hits.length>0&&hits[0].distance<cDist){cDist=hits[0].distance;closest=mesh;}
+  }
+  if(closest){
+    const L=closest.userData;
+    const tipContent=`<b>${L.name}</b>（${L.nameEn}）<br>深度：${L.depth}<br>温度：${L.temp}<br>组成：${L.comp}<br>状态：${L.state}`;
+    tooltipEl.innerHTML=tipContent;
+    posEl(tooltipEl,ex,ey);
+    document.body.style.cursor='pointer';
+    return true;
+  }
+  return false;
+}
+
 /* ══════════ Plate Split Feature ══════════ */
 const SPLIT_INFO = __PLATE_INFO__;
 const splitParent=new THREE.Group();splitParent.rotation.x=TILT;splitParent.visible=false;scene.add(splitParent);
@@ -734,6 +884,7 @@ window.addEventListener('keydown',e=>{
 /* ══════════ Double-click Zoom ══════════ */
 renderer.domElement.addEventListener('dblclick',e=>{
   e.preventDefault();
+  if(interiorMode)return;
   const mx=(e.clientX/innerWidth)*2-1, my=-(e.clientY/innerHeight)*2+1;
   const rc=new THREE.Raycaster();
   rc.setFromCamera(new THREE.Vector2(mx,my),camera);
@@ -750,7 +901,7 @@ renderer.domElement.addEventListener('dblclick',e=>{
 
 /* ══════════ Click: select volcano or deselect ══════════ */
 renderer.domElement.addEventListener('click',e=>{
-  if(splitActive){return;}
+  if(splitActive||interiorMode){return;}
   if(!volcanoGroup.visible){if(selectedVolcano)deselectVolcano();return;}
   const mx=(e.clientX/innerWidth)*2-1, my=-(e.clientY/innerHeight)*2+1;
   const rc=new THREE.Raycaster();
@@ -880,6 +1031,7 @@ renderer.domElement.addEventListener('pointermove',e=>{
   if(splitActive||overBar||inPopup){tooltipEl.style.display='none';clusterEl.style.display='none';document.body.style.cursor='default';return;}
   mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(mouse,camera);
+  if(interiorHover(raycaster,e.clientX,e.clientY)){clusterEl.style.display='none';return;}
   const eDist=earthDist(raycaster);
   if(volcanoGroup.visible){
     const vis=volcanoSprites.filter(s=>s.visible&&isVisible(s));
