@@ -579,19 +579,15 @@ function makeLabelSprite(text,position,layerData){
   return sp;
 }
 function makeLeaderLine(points){
-  const geo=new THREE.BufferGeometry().setFromPoints(points);
-  const mat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.4});
-  const line=new THREE.Line(geo,mat);
-  interiorGroup.add(line);
+  const pts=[];
+  points.forEach(p=>{pts.push(p.x,p.y,p.z);});
+  const geo=new LineGeometry();geo.setPositions(pts);
+  const mat=new LineMaterial({color:0xffffff,linewidth:2,transparent:true,opacity:0.5,resolution});
+  const line=new Line2(geo,mat);line.computeLineDistances();
+  interiorGroup.add(line);allLineMats.push(mat);
 }
 
-/*
-  Anchors on the z=0 cross-section at 45° (visible face from front).
-  Lines go: anchor → 45° up-right → horizontal to label.
-  All in z=0 plane so they stay on the visible cross-section.
-  Adjust anchorX/anchorY/kneeX/kneeY/labelY per layer to avoid crossing Earth.
-*/
-const LABEL_RIGHT=1.45;
+const LABEL_X=1.45;
 const labelCfg=[
   {aR:0.998, labelY:0.82},
   {aR:0.990, labelY:0.66},
@@ -607,13 +603,12 @@ LAYERS.forEach((L,i)=>{
   const angle=Math.PI*0.28;
   const ax=midR*Math.cos(angle);
   const ay=midR*Math.sin(angle);
-  const kneeX=ax+(cfg.labelY-ay>0?0.15:0.1);
-  const kneeY=cfg.labelY;
+  const kneeX=ax+Math.abs(cfg.labelY-ay);
   const from=new THREE.Vector3(ax,ay,0);
-  const knee=new THREE.Vector3(LABEL_RIGHT-0.05, cfg.labelY, 0);
-  const to=new THREE.Vector3(LABEL_RIGHT, cfg.labelY, 0);
+  const knee=new THREE.Vector3(kneeX, cfg.labelY, 0);
+  const to=new THREE.Vector3(LABEL_X, cfg.labelY, 0);
   makeLeaderLine([from,knee,to]);
-  makeLabelSprite(L.name,new THREE.Vector3(LABEL_RIGHT+0.02, cfg.labelY, 0),L);
+  makeLabelSprite(L.name,new THREE.Vector3(LABEL_X+0.03, cfg.labelY, 0),L);
 });
 
 /* interior mode toggle */
