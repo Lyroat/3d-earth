@@ -580,9 +580,9 @@ function makeLabelSprite(text,position,layerData){
 }
 function makeLeaderLine(points){
   const pts=[];
-  points.forEach(p=>{pts.push(p.x,p.y,p.z);});
+  points.forEach(p=>{pts.push(p.x,p.y,p.z+0.01);});
   const geo=new LineGeometry();geo.setPositions(pts);
-  const mat=new LineMaterial({color:0xffffff,linewidth:4,transparent:true,opacity:0.5,resolution});
+  const mat=new LineMaterial({color:0xffffff,linewidth:3,transparent:true,opacity:0.5,worldUnits:false,resolution});
   const line=new Line2(geo,mat);line.computeLineDistances();
   interiorGroup.add(line);allLineMats.push(mat);
 }
