@@ -305,7 +305,6 @@ camera.position.set(0, 0, 3);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.localClippingEnabled=true;
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -323,10 +322,10 @@ const earthMat = new THREE.ShaderMaterial({
   uniforms: {
     uTex:{value:_bk}, uBumpTex:{value:_bk},
     uCam:{value:camera.position}, uOpacity:{value:1.0},
-    uBumpScale:{value:0.0}
+    uBumpScale:{value:0.0},
+    uClipInterior:{value:0.0}
   },
   vertexShader: `
-    #include <clipping_planes_pars_vertex>
     uniform sampler2D uBumpTex; uniform float uBumpScale;
     varying vec2 vUv; varying vec3 vNorm; varying vec3 vWPos;
     void main(){
@@ -335,17 +334,16 @@ const earthMat = new THREE.ShaderMaterial({
       vec3 pos = position + normal * bump * uBumpScale;
       vNorm = normalize(normalMatrix * normal);
       vWPos = (modelMatrix * vec4(pos,1.0)).xyz;
-      vec4 mvPos = modelViewMatrix * vec4(pos,1.0);
-      gl_Position = projectionMatrix * mvPos;
-      #include <clipping_planes_vertex>
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.0);
     }`,
   fragmentShader: `
-    #include <clipping_planes_pars_fragment>
     uniform sampler2D uTex;
-    uniform vec3 uCam; uniform float uOpacity;
+    uniform vec3 uCam; uniform float uOpacity; uniform float uClipInterior;
     varying vec2 vUv; varying vec3 vNorm; varying vec3 vWPos;
     void main(){
-      #include <clipping_planes_fragment>
+      if(uClipInterior>0.5){
+        if(vWPos.x>0.0 && vWPos.y>0.0 && vWPos.z>0.0) discard;
+      }
       vec3 c = texture2D(uTex, vUv).rgb;
       float gridU = abs(fract(vUv.x * 36.0) - 0.5) * 2.0;
       float gridV = abs(fract(vUv.y * 18.0) - 0.5) * 2.0;
@@ -353,14 +351,7 @@ const earthMat = new THREE.ShaderMaterial({
       c += grid * vec3(0.015, 0.045, 0.09);
       gl_FragColor = vec4(c, uOpacity);
     }`,
-  transparent: true,
-  clipping: true,
-  clippingPlanes: [
-    new THREE.Plane(new THREE.Vector3(1,0,0),10),
-    new THREE.Plane(new THREE.Vector3(0,1,0),10),
-    new THREE.Plane(new THREE.Vector3(0,0,1),10)
-  ],
-  clipIntersection: true
+  transparent: true
 });
 const earth = new THREE.Mesh(earthGeo, earthMat);
 earth.rotation.x = TILT;
@@ -644,24 +635,14 @@ const interiorGroup=new THREE.Group();
 interiorGroup.visible=false;
 scene.add(interiorGroup);
 
-/* Interior: clipIntersection=false, clips x<0 OR y<0 OR z<0, keeps only x>=0 AND y>=0 AND z>=0 (1/8) */
-const interiorClipPlanes=[
-  new THREE.Plane(new THREE.Vector3(-1,0,0),0),
-  new THREE.Plane(new THREE.Vector3(0,-1,0),0),
-  new THREE.Plane(new THREE.Vector3(0,0,-1),0)
-];
 
 const layerVS=`
-#include <clipping_planes_pars_vertex>
 varying vec3 vPos;varying vec3 vNorm;
 void main(){
   vPos=position;vNorm=normalize(normalMatrix*normal);
-  vec4 mvPos=modelViewMatrix*vec4(position,1.0);
-  gl_Position=projectionMatrix*mvPos;
-  #include <clipping_planes_vertex>
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
 }`;
 const layerFS=`
-#include <clipping_planes_pars_fragment>
 uniform vec3 uColor;uniform float uInnerR;uniform float uOuterR;
 varying vec3 vPos;varying vec3 vNorm;
 float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
@@ -673,7 +654,7 @@ float noise3d(vec3 p){
     mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
 }
 void main(){
-  #include <clipping_planes_fragment>
+  if(vPos.x<0.0||vPos.y<0.0||vPos.z<0.0) discard;
   float r=length(vPos);
   float t=(r-uInnerR)/(uOuterR-uInnerR);
   float n=noise3d(vPos*12.0)*0.15+noise3d(vPos*25.0)*0.08;
@@ -689,8 +670,7 @@ LAYERS.forEach(L=>{
   const mat=new THREE.ShaderMaterial({
     vertexShader:layerVS,fragmentShader:layerFS,
     uniforms:{uColor:{value:new THREE.Color(L.color)},uInnerR:{value:L.rInner},uOuterR:{value:L.rOuter}},
-    side:THREE.DoubleSide, transparent:true,
-    clipping:true, clippingPlanes:interiorClipPlanes, clipIntersection:false
+    side:THREE.DoubleSide, transparent:true
   });
   const mesh=new THREE.Mesh(geo,mat);
   mesh.userData=L;
@@ -807,12 +787,12 @@ function toggleInterior(){
     volcanoGroup.visible=false;
     boundaryGroup.visible=false;
     gridGroup.visible=false;
-    earthMat.clippingPlanes.forEach(p=>{p.constant=0;});
+    earthMat.uniforms.uClipInterior.value=1.0;
   }else{
     volcanoGroup.visible=true;
     boundaryGroup.visible=true;
     gridGroup.visible=true;
-    earthMat.clippingPlanes.forEach(p=>{p.constant=10;});
+    earthMat.uniforms.uClipInterior.value=0.0;
   }
 }
 document.getElementById('tb-interior').addEventListener('click',e=>{
