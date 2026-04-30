@@ -504,17 +504,17 @@ const interiorGroup=new THREE.Group();
 interiorGroup.visible=false;
 scene.add(interiorGroup);
 
-/* Earth surface: clipIntersection=true with these → removes only x>0 AND y>0 AND z>0 (1/8) */
+/* Earth: clipIntersection=true, normals point INTO cut region → clips x>0 AND y>0 AND z>0 */
 const earthClipPlanes=[
-  new THREE.Plane(new THREE.Vector3(-1,0,0),0),
-  new THREE.Plane(new THREE.Vector3(0,0,-1),0),
-  new THREE.Plane(new THREE.Vector3(0,-1,0),0)
-];
-/* Interior layers: inverted normals + clipIntersection=false → keeps only x>0 AND y>0 AND z>0 (1/8) */
-const interiorClipPlanes=[
   new THREE.Plane(new THREE.Vector3(1,0,0),0),
-  new THREE.Plane(new THREE.Vector3(0,0,1),0),
-  new THREE.Plane(new THREE.Vector3(0,1,0),0)
+  new THREE.Plane(new THREE.Vector3(0,1,0),0),
+  new THREE.Plane(new THREE.Vector3(0,0,1),0)
+];
+/* Interior: clipIntersection=false, normals point AWAY from cut → clips x<0 OR y<0 OR z<0, keeps 1/8 */
+const interiorClipPlanes=[
+  new THREE.Plane(new THREE.Vector3(-1,0,0),0),
+  new THREE.Plane(new THREE.Vector3(0,-1,0),0),
+  new THREE.Plane(new THREE.Vector3(0,0,-1),0)
 ];
 
 const layerVS=`
