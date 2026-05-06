@@ -502,11 +502,9 @@ scene.add(interiorGroup);
 
 const layerMeshes=[];
 
-/* cross-section shader (concentric rings on cutting planes) */
+/* cross-section shader - 5 visual zones matching reference image */
 const csVS=`varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
 const csFS=`
-uniform vec3 uColors[7];
-uniform float uRadii[8];
 varying vec3 vPos;
 float hash2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float noise2d(vec2 p){
@@ -514,34 +512,117 @@ float noise2d(vec2 p){
   return mix(mix(hash2(i),hash2(i+vec2(1,0)),f.x),
     mix(hash2(i+vec2(0,1)),hash2(i+vec2(1,1)),f.x),f.y);
 }
+float fbm(vec2 p){
+  float v=0.0;v+=noise2d(p*1.0)*0.5;v+=noise2d(p*2.0)*0.25;
+  v+=noise2d(p*4.0)*0.125;v+=noise2d(p*8.0)*0.0625;return v;
+}
+float fbm6(vec2 p){
+  float v=0.0,a=0.5;
+  for(int i=0;i<6;i++){v+=noise2d(p)*a;p*=2.03;a*=0.48;}
+  return v;
+}
 void main(){
   float r=length(vPos);
   if(r>1.0) discard;
-  vec3 c=uColors[6];
-  float t=0.0;
-  for(int i=0;i<7;i++){
-    if(r>=uRadii[i+1]&&r<=uRadii[i]){
-      c=uColors[i];
-      t=(r-uRadii[i+1])/(uRadii[i]-uRadii[i+1]);
-      break;
-    }
+  vec3 c;
+  float n;
+  float ang=atan(vPos.y,vPos.x);
+  if(r<0.192){
+    /* Inner Core: bright white/yellow glow */
+    float t=r/0.192;
+    n=fbm(vPos.xy*6.0);
+    c=mix(vec3(1.0,1.0,0.92),vec3(1.0,0.97,0.75),t+n*0.15);
+    c+=vec3(0.35,0.25,0.1)*(1.0-t);
+  }else if(r<0.546){
+    /* Outer Core: bright molten orange-yellow with flame streaks */
+    float t=(r-0.192)/(0.546-0.192);
+
+    vec2 polar=vec2(r*8.0, ang*3.0);
+    float flame1=fbm6(polar+vec2(0.3,0.7));
+    float flame2=fbm6(polar*1.5+vec2(2.1,1.3));
+    float streak=fbm6(vec2(ang*5.0+r*12.0, r*6.0));
+
+    vec3 hotCore=vec3(1.0,0.85,0.3);
+    vec3 midOrange=vec3(1.0,0.55,0.08);
+    vec3 deepOrange=vec3(0.9,0.32,0.02);
+
+    float blend=t*0.6+flame1*0.25+flame2*0.15;
+    c=mix(hotCore,midOrange,smoothstep(0.0,0.5,blend));
+    c=mix(c,deepOrange,smoothstep(0.5,1.0,blend));
+
+    float streakMask=smoothstep(0.35,0.65,streak);
+    c+=vec3(0.15,0.1,0.02)*streakMask;
+
+    float radialGlow=1.0-t*0.4;
+    c*=radialGlow;
+
+    float detail=noise2d(vPos.xy*20.0);
+    c+=vec3(0.08,0.04,0.0)*detail;
+
+    c=clamp(c,0.0,1.0);
+    c*=1.15;
+  }else if(r<0.957){
+    /* Mantle (Lower Mantle + Transition Zone): dark rocky reddish-brown */
+    float t=(r-0.546)/(0.957-0.546);
+
+    float n1=fbm6(vPos.xy*5.0);
+    float n2=noise2d(vPos.xy*18.0);
+    float n3=noise2d(vPos.xy*40.0);
+    float n4=noise2d(vPos.xy*70.0);
+
+    float grain=noise2d(vPos.xy*55.0)*0.5+noise2d(vPos.xy*90.0)*0.3+noise2d(vPos.xy*150.0)*0.2;
+
+    vec3 innerMantle=vec3(0.45,0.10,0.03);
+    vec3 midMantle=vec3(0.32,0.07,0.03);
+    vec3 outerMantle=vec3(0.22,0.06,0.04);
+    vec3 base=mix(innerMantle,midMantle,smoothstep(0.0,0.5,t));
+    base=mix(base,outerMantle,smoothstep(0.5,1.0,t));
+
+    base+=vec3(0.06,0.015,0.005)*n1;
+    base+=vec3(0.04,0.01,0.005)*n2;
+
+    float rocky=smoothstep(0.3,0.7,grain);
+    base=mix(base,base*0.75,rocky*0.35);
+    base+=vec3(0.02,0.005,0.0)*n4;
+
+    float hotSpot=smoothstep(0.6,0.8,noise2d(vPos.xy*8.0+vec2(n1)));
+    base+=vec3(0.08,0.02,0.0)*hotSpot*(1.0-t*0.7);
+
+    float edgeGlow=smoothstep(0.02,0.0,abs(t-0.0))*0.12;
+    base+=vec3(0.5,0.15,0.02)*edgeGlow;
+
+    c=base;
+  }else if(r<0.984){
+    /* Asthenosphere: semi-molten transition, warm dark red-brown */
+    float t=(r-0.957)/(0.984-0.957);
+    float n1=fbm6(vPos.xy*6.0+vec2(0.5,0.2));
+    float n2=noise2d(vPos.xy*25.0);
+    float n3=noise2d(vPos.xy*50.0);
+    float grain=noise2d(vPos.xy*65.0)*0.5+noise2d(vPos.xy*100.0)*0.5;
+
+    vec3 base=mix(vec3(0.25,0.07,0.04),vec3(0.20,0.06,0.04),t);
+    base+=vec3(0.05,0.012,0.0)*n1;
+    base+=vec3(0.03,0.008,0.0)*n2;
+    base=mix(base,base*0.8,smoothstep(0.3,0.7,grain)*0.25);
+
+    float flow=smoothstep(0.4,0.65,noise2d(vPos.xy*10.0+vec2(n1*2.0)));
+    base+=vec3(0.06,0.015,0.005)*flow;
+    c=base;
+  }else{
+    /* Lithosphere (Crust + Lithospheric Mantle): grey-brown rocky */
+    float t=(r-0.984)/(1.0-0.984);
+    float n1=fbm(vPos.xy*10.0);
+    float n2=noise2d(vPos.xy*35.0);
+    float n3=noise2d(vPos.xy*70.0);
+    vec3 base=mix(vec3(0.26,0.19,0.14),vec3(0.20,0.15,0.11),n1);
+    base+=vec3(0.05)*n2+vec3(0.025)*n3;
+    base*=0.88+0.12*t;
+    c=base;
   }
-  float n1=noise2d(vPos.xy*15.0)*0.1;
-  float n2=noise2d(vPos.xy*40.0)*0.06;
-  float n3=noise2d(vPos.xy*80.0)*0.03;
-  vec3 darkC=c*0.6;
-  vec3 lightC=c*1.3;
-  c=mix(darkC,lightC,t*0.7+n1+0.3);
-  c+=vec3(n2+n3)*0.4;
-  float edge=smoothstep(0.0,0.02,abs(r-uRadii[1]))*smoothstep(0.0,0.02,abs(r-uRadii[2]))*smoothstep(0.0,0.02,abs(r-uRadii[3]))*smoothstep(0.0,0.02,abs(r-uRadii[4]))*smoothstep(0.0,0.02,abs(r-uRadii[5]))*smoothstep(0.0,0.02,abs(r-uRadii[6]));
-  c*=mix(0.4,1.0,edge);
   gl_FragColor=vec4(c,1.0);
 }`;
-const csRadii=[1.0,0.995,0.984,0.957,0.896,0.546,0.192,0.0];
-const csColors=LAYERS.map(L=>new THREE.Color(L.color));
 const csMat=new THREE.ShaderMaterial({
   vertexShader:csVS,fragmentShader:csFS,
-  uniforms:{uColors:{value:csColors},uRadii:{value:csRadii}},
   side:THREE.DoubleSide, transparent:true
 });
 
