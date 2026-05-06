@@ -1,3 +1,11 @@
 *.pyc
 __pycache__/
 .DS_Store
+
+# Large binary/data files
+textures/
+tectonicplates-master/
+*.txt
+*.jpeg
+*.json
+Composition-of-Earths-Mantle-*.jpeg
