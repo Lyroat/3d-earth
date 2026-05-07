@@ -129,7 +129,6 @@ canvas{display:block}
   <span class="hint">拖动旋转 · 滚轮缩放 · 双击放大 · ESC 返回</span>
 </div>
 
-<div id="month-label" style="position:absolute;top:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.6);font-size:13px;letter-spacing:2px;pointer-events:none;z-index:5;text-transform:uppercase"></div>
 <div id="tooltip"></div>
 <div id="cluster-popup"></div>
 
@@ -251,9 +250,6 @@ function mkTex(id){
   const img=document.getElementById(id);
   const t=new THREE.Texture(img);t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;return t;
 }
-const MONTH_NAMES=['','january','february','march','april','may','june',
-  'july','august','september','october','november','december'];
-const curMonth=new Date().getMonth()+1;
 const texLoader=new THREE.TextureLoader();
 
 function loadBumpTex(){
@@ -263,18 +259,15 @@ function loadBumpTex(){
 }
 loadBumpTex();
 
-function loadMonthTex(month){
-  const mm=String(month).padStart(2,'0');
-  const url='textures/'+mm+'.jpg';
+(function loadEarthTex(){
+  const url='textures/04.jpg';
   document.getElementById('loading').classList.remove('hidden');
   texLoader.load(url,tex=>{
     tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
     earthMat.uniforms.uTex.value=tex;
     document.getElementById('loading').classList.add('hidden');
-    document.getElementById('month-label').textContent=MONTH_NAMES[month].charAt(0).toUpperCase()+MONTH_NAMES[month].slice(1);
   });
-}
-loadMonthTex(curMonth);
+})();
 
 /* ══════════ Lat/Lon Grid Overlay ══════════ */
 const gridGroup = new THREE.Group();
@@ -494,19 +487,6 @@ terrainBtn.addEventListener('click',e=>{
 });
 dGrid.appendChild(terrainBtn);
 
-const monthRow=document.createElement('div');
-monthRow.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)';
-const mPrev=document.createElement('button');mPrev.className='chip';mPrev.textContent='◀';mPrev.style.padding='4px 8px';
-const mNext=document.createElement('button');mNext.className='chip';mNext.textContent='▶';mNext.style.padding='4px 8px';
-const mLabel=document.createElement('span');mLabel.style.cssText='color:rgba(255,255,255,.7);font-size:11px;flex:1;text-align:center';
-const MCN=['','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-let activeMonth=curMonth;
-function updateMonthUI(){mLabel.textContent='🌍 '+MCN[activeMonth]+'的地球';}
-updateMonthUI();
-mPrev.addEventListener('click',e=>{e.stopPropagation();activeMonth=activeMonth<=1?12:activeMonth-1;updateMonthUI();loadMonthTex(activeMonth);});
-mNext.addEventListener('click',e=>{e.stopPropagation();activeMonth=activeMonth>=12?1:activeMonth+1;updateMonthUI();loadMonthTex(activeMonth);});
-monthRow.appendChild(mPrev);monthRow.appendChild(mLabel);monthRow.appendChild(mNext);
-dGrid.appendChild(monthRow);
 
 /* ══════════ Earth Interior Layers ══════════ */
 const LAYERS=[
