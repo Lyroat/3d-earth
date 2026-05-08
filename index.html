@@ -16,7 +16,7 @@ canvas{display:block}
 
 /* ── Bottom Toolbar ── */
 #bottom-bar{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 16px;background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,.3) 80%,transparent);z-index:10;pointer-events:none}
-.tb-btn{pointer-events:auto;padding:6px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;position:relative}
+.tb-btn{pointer-events:auto;padding:6px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;position:relative}
 .tb-btn:hover{background:rgba(255,255,255,.14);color:#fff}
 .tb-btn.active{background:rgba(77,195,247,.18);border-color:rgba(77,195,247,.4);color:#fff}
 #pause-btn{pointer-events:auto;width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
@@ -30,7 +30,7 @@ canvas{display:block}
 .pm-grid{display:flex;flex-wrap:wrap;gap:4px;padding:4px}
 .pm-search{position:relative;padding:4px 8px 8px}
 
-.chip{padding:4px 10px;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);font-size:11px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;font-family:inherit;line-height:1.4}
+.chip{padding:4px 10px;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);font-size:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;font-family:inherit;line-height:1.4}
 .chip:hover{background:rgba(255,255,255,.12);color:#fff}
 .chip.off{opacity:.3}
 .chip.active{background:rgba(77,195,247,.2);border-color:rgba(77,195,247,.45);color:#fff}
@@ -38,7 +38,7 @@ canvas{display:block}
 .chip .cline{width:20px;height:3px;border-radius:2px;flex-shrink:0}
 .chip small{color:rgba(255,255,255,.35);font-size:10px}
 
-#split-btn{padding:4px 12px;border:1px solid rgba(100,200,255,.25);border-radius:6px;background:rgba(100,200,255,.08);color:rgba(100,200,255,.85);font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
+#split-btn{padding:4px 12px;border:1px solid rgba(100,200,255,.25);border-radius:6px;background:rgba(100,200,255,.08);color:rgba(100,200,255,.85);font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s}
 #split-btn:hover{background:rgba(100,200,255,.18);color:#fff}
 #split-btn.active{background:rgba(100,200,255,.25);border-color:rgba(100,200,255,.5);color:#fff}
 
@@ -46,8 +46,9 @@ canvas{display:block}
 #volcano-search{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#fff;font-size:11px;padding:5px 10px;width:100%;outline:none;font-family:inherit;box-sizing:border-box}
 #volcano-search:focus{border-color:rgba(77,195,247,.5);background:rgba(255,255,255,.12)}
 #volcano-search::placeholder{color:rgba(255,255,255,.3)}
-#search-results{position:absolute;bottom:calc(100% + 4px);left:0;right:0;width:100%;max-height:220px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
-.sr-item{padding:6px 12px;cursor:pointer;font-size:11px;color:rgba(255,255,255,.8);border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center}
+#search-results{position:absolute;bottom:calc(100% + 4px);left:0;right:0;max-height:220px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
+.sr-item{padding:6px 12px;cursor:pointer;font-size:11px;color:rgba(255,255,255,.8);border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}
+.sr-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
 .sr-item:hover{background:rgba(77,195,247,.15);color:#fff}
 .sr-item:last-child{border-bottom:none}
 .sr-name{font-weight:500}.sr-sub{color:rgba(255,255,255,.4);font-size:10px}
@@ -74,16 +75,38 @@ canvas{display:block}
 #cl-detail{margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);line-height:1.7;font-size:11px}
 
 /* ── Interior Layer Panel ── */
-#layer-panel{position:absolute;left:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto}
+#layer-panel{position:absolute;left:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;width:fit-content}
 #layer-panel.show{display:flex;flex-direction:column;gap:3px}
-.lp-btn{padding:7px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(8,8,18,.75);backdrop-filter:blur(10px);color:rgba(255,255,255,.7);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;text-align:left;display:flex;align-items:center;gap:8px}
+.lp-btn{padding:7px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;text-align:left;display:flex;align-items:center;gap:8px}
 .lp-btn:hover{background:rgba(255,255,255,.12);color:#fff}
 .lp-btn.active{background:rgba(77,195,247,.2);border-color:rgba(77,195,247,.45);color:#fff}
 .lp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.2)}
-.lp-btn.indent{margin-left:18px;font-size:11px;padding:5px 12px}
+.lp-btn.indent{margin-left:18px;font-size:12px;padding:5px 12px}
 .lp-btn.indent .lp-dot{width:8px;height:8px}
-.lp-reset{padding:6px 14px;border:1px solid rgba(255,200,100,.2);border-radius:8px;background:rgba(255,200,100,.08);color:rgba(255,200,100,.8);font-size:11px;cursor:pointer;font-family:inherit;transition:all .2s;text-align:center;margin-top:6px}
+.lp-reset{padding:6px 14px;border:1px solid rgba(255,200,100,.2);border-radius:8px;background:rgba(255,200,100,.08);color:rgba(255,200,100,.8);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;text-align:center;margin-top:6px}
 .lp-reset:hover{background:rgba(255,200,100,.18);color:#fff}
+
+/* ── Side Panels (plates & volcano) ── */
+.side-panel{position:absolute;left:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;max-height:70vh;overflow-y:auto;width:fit-content}
+#volcano-panel{min-width:0}
+.side-panel.show{display:flex;flex-direction:column;gap:4px}
+.sp-section{margin-bottom:4px}
+.sp-section:last-child{margin-bottom:0}
+.sp-title{font-size:10px;color:rgba(255,255,255,.35);padding:2px 4px 6px;margin-bottom:4px;letter-spacing:.5px}
+.sp-grid{display:flex;flex-direction:column;gap:4px}
+.sp-grid .chip{width:100%;box-sizing:border-box}
+#volcano-grid .chip{width:auto}
+.sp-scroll{max-height:120px;overflow-y:auto;padding-right:2px}
+.sp-scroll::-webkit-scrollbar{width:4px}
+.sp-scroll::-webkit-scrollbar-track{background:transparent}
+.sp-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+.sp-scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3)}
+.sp-search{position:relative;padding:2px 0 0;min-width:0;width:100%}
+.sp-search #volcano-search{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#fff;font-size:12px;padding:5px 10px;width:100%;min-width:0;outline:none;font-family:inherit;box-sizing:border-box}
+.sp-search #volcano-search:focus{border-color:rgba(77,195,247,.5);background:rgba(255,255,255,.12)}
+.sp-search #volcano-search::placeholder{color:rgba(255,255,255,.3)}
+.sp-search #search-results{position:absolute;bottom:calc(100% + 4px);left:0;right:0;max-height:180px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
+#split-section #split-btn{width:100%;box-sizing:border-box;text-align:center}
 
 </style>
 </head>
@@ -91,46 +114,41 @@ canvas{display:block}
 <div id="loading"><div class="spinner"></div></div>
 
 <div id="bottom-bar">
-  <button id="pause-btn" title="暂停/继续">⏸</button>
-
-  <div class="tb-btn" id="tb-plates">板块导航
-    <div class="popup-menu" id="menu-plates">
-      <div class="pm-title">选择板块（点击旋转到对应位置并高亮）</div>
-      <div class="pm-grid" id="plate-grid"></div>
-    </div>
-  </div>
-
-  <div class="tb-btn" id="tb-boundary">板块边界
-    <div class="popup-menu" id="menu-boundary">
-      <div class="pm-title">高亮展示对应类型边界</div>
-      <div class="pm-grid" id="boundary-grid"></div>
-    </div>
-  </div>
-
-  <div class="tb-btn" id="tb-volcano">火山筛选
-    <div class="popup-menu" id="menu-volcano">
-      <div class="pm-title">只显示选定类型的火山</div>
-      <div class="pm-grid" id="volcano-grid"></div>
-      <div class="pm-search">
-        <input type="text" id="volcano-search" placeholder="搜索火山名称，回车定位..." autocomplete="off" />
-        <div id="search-results"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="tb-btn" id="tb-display">显示设置
-    <div class="popup-menu" id="menu-display">
-      <div class="pm-grid" id="display-grid"></div>
-    </div>
-  </div>
-
+  <button id="pause-btn" title="暂停/继续自转">⏸</button>
+  <button class="tb-btn" id="tb-terrain">🏔 地形</button>
+  <button class="tb-btn" id="tb-plates">🌍 地球板块</button>
+  <button class="tb-btn" id="tb-volcano">🌋 火山分布</button>
   <button class="tb-btn" id="tb-interior">🌐 地球内部</button>
-
   <span class="hint">拖动旋转 · 滚轮缩放 · 双击放大 · ESC 返回</span>
 </div>
 
 <div id="tooltip"></div>
 <div id="cluster-popup"></div>
+
+<div class="side-panel" id="plates-panel">
+  <div class="sp-section" id="split-section"></div>
+  <div class="sp-section">
+    <div class="sp-title">板块导航</div>
+    <div class="sp-grid sp-scroll" id="plate-grid"></div>
+  </div>
+  <div class="sp-section">
+    <div class="sp-title">板块边界</div>
+    <div class="sp-grid" id="boundary-grid"></div>
+  </div>
+</div>
+
+<div class="side-panel" id="volcano-panel">
+  <div class="sp-section">
+    <div class="sp-title">火山类型</div>
+    <div class="sp-grid" id="volcano-grid"></div>
+  </div>
+  <div class="sp-section">
+    <div class="sp-search">
+      <input type="text" id="volcano-search" placeholder="搜索火山" autocomplete="off" size="1" />
+      <div id="search-results"></div>
+    </div>
+  </div>
+</div>
 
 <div id="layer-panel">
   <button class="lp-btn" data-layer="crust"><span class="lp-dot" style="background:#8B4513"></span>地壳</button>
@@ -245,7 +263,6 @@ earth.rotation.x = TILT;
 scene.add(earth);
 
 /* ══════════ Load Textures ══════════ */
-let showBump=false;
 function mkTex(id){
   const img=document.getElementById(id);
   const t=new THREE.Texture(img);t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;return t;
@@ -360,27 +377,45 @@ V_DATA.forEach(([lon,lat,name,nameCn,type,typeCn,sc,statusCn,statusEn,region,las
   volcanoGroup.add(sp);volcanoSprites.push(sp);
 });
 
-/* ══════════ Toolbar: Popup Menus ══════════ */
-let openMenu=null;
-function toggleMenu(menuId,btnEl){
-  document.querySelectorAll('.popup-menu').forEach(m=>m.classList.remove('show'));
-  document.querySelectorAll('.tb-btn').forEach(b=>b.classList.remove('active'));
-  if(openMenu===menuId){openMenu=null;return;}
-  openMenu=menuId;
-  document.getElementById(menuId).classList.add('show');
-  btnEl.classList.add('active');
+/* ══════════ Toolbar: Side Panel Toggle ══════════ */
+let activePanel=null;
+const panelMap={plates:'plates-panel',volcano:'volcano-panel'};
+
+function closeAllPanels(){
+  document.getElementById('plates-panel').classList.remove('show');
+  document.getElementById('volcano-panel').classList.remove('show');
+  document.getElementById('tb-plates').classList.remove('active');
+  document.getElementById('tb-volcano').classList.remove('active');
 }
-document.addEventListener('click',e=>{
-  if(openMenu && !e.target.closest('.tb-btn')){
-    document.querySelectorAll('.popup-menu').forEach(m=>m.classList.remove('show'));
-    document.querySelectorAll('.tb-btn').forEach(b=>b.classList.remove('active'));
-    openMenu=null;
+
+function togglePanel(name){
+  if(name==='interior'){
+    closeAllPanels();
+    activePanel=interiorMode?null:'interior';
+    toggleInterior();
+    return;
   }
+  if(interiorMode) toggleInterior();
+  const panel=document.getElementById(panelMap[name]);
+  const btn=document.getElementById('tb-'+name);
+  if(activePanel===name){
+    panel.classList.remove('show');btn.classList.remove('active');activePanel=null;
+  }else{
+    closeAllPanels();
+    panel.classList.add('show');btn.classList.add('active');activePanel=name;
+  }
+}
+
+document.getElementById('tb-plates').addEventListener('click',()=>togglePanel('plates'));
+document.getElementById('tb-volcano').addEventListener('click',()=>togglePanel('volcano'));
+
+/* ── Terrain toggle (direct button) ── */
+let showBump=false;
+document.getElementById('tb-terrain').addEventListener('click',()=>{
+  showBump=!showBump;
+  document.getElementById('tb-terrain').classList.toggle('active',showBump);
+  earthMat.uniforms.uBumpScale.value=showBump?0.018:0.0;
 });
-document.getElementById('tb-plates').addEventListener('click',e=>{if(!e.target.closest('.popup-menu'))toggleMenu('menu-plates',document.getElementById('tb-plates'));});
-document.getElementById('tb-boundary').addEventListener('click',e=>{if(!e.target.closest('.popup-menu'))toggleMenu('menu-boundary',document.getElementById('tb-boundary'));});
-document.getElementById('tb-volcano').addEventListener('click',e=>{if(!e.target.closest('.popup-menu'))toggleMenu('menu-volcano',document.getElementById('tb-volcano'));});
-document.getElementById('tb-display').addEventListener('click',e=>{if(!e.target.closest('.popup-menu'))toggleMenu('menu-display',document.getElementById('tb-display'));});
 
 /* ══════════ Volcano Filter (exclusive mode) ══════════ */
 const vGrid=document.getElementById('volcano-grid');
@@ -475,17 +510,9 @@ PLATES.forEach(pl=>{
 });
 const splitBtn=document.createElement('button');splitBtn.id='split-btn';splitBtn.textContent='🔄 拆分板块';
 splitBtn.addEventListener('click',e=>{e.stopPropagation();toggleSplit();});
-pGrid.appendChild(splitBtn);
+document.getElementById('split-section').appendChild(splitBtn);
 
-/* ══════════ Display Toggles ══════════ */
-const dGrid=document.getElementById('display-grid');
-const terrainBtn=document.createElement('button');terrainBtn.className='chip';terrainBtn.id='terrain-btn';terrainBtn.textContent='🏔 地形';
-terrainBtn.addEventListener('click',e=>{
-  e.stopPropagation();
-  showBump=!showBump;terrainBtn.classList.toggle('active',showBump);
-  earthMat.uniforms.uBumpScale.value=showBump?0.018:0.0;
-});
-dGrid.appendChild(terrainBtn);
+/* ══════════ Display Toggles (moved to bottom bar) ══════════ */
 
 
 /* ══════════ Earth Interior Layers ══════════ */
@@ -725,6 +752,7 @@ function toggleInterior(){
     gridGroup.visible=false;
     earthMat.uniforms.uClipInterior.value=1.0;
     layerPanel.classList.add('show');
+    activePanel='interior';
   }else{
     volcanoGroup.visible=true;
     boundaryGroup.visible=true;
@@ -732,14 +760,13 @@ function toggleInterior(){
     earthMat.uniforms.uClipInterior.value=0.0;
     layerPanel.classList.remove('show');
     activeLayer=null;
+    activePanel=null;
     csMat.uniforms.uFocusMode.value=0.0;
     layerPanel.querySelectorAll('.lp-btn').forEach(b=>b.classList.remove('active'));
     updateLabelVisibility(null);
   }
 }
-document.getElementById('tb-interior').addEventListener('click',e=>{
-  e.stopPropagation();toggleInterior();
-});
+document.getElementById('tb-interior').addEventListener('click',()=>togglePanel('interior'));
 
 /* ── Layer focus panel ── */
 const layerPanel=document.getElementById('layer-panel');
@@ -917,6 +944,11 @@ function deselectVolcano(){
 
 window.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
+    if(activePanel){
+      if(activePanel==='interior') toggleInterior();
+      else{ closeAllPanels(); activePanel=null; }
+      return;
+    }
     deselectVolcano();restoreView();
     tooltipEl.style.display='none';clusterEl.style.display='none';
     document.getElementById('search-results').style.display='none';
@@ -1068,9 +1100,9 @@ renderer.domElement.addEventListener('pointermove',e=>{
   const barEl=document.getElementById('bottom-bar');
   const barRect=barEl.getBoundingClientRect();
   const overBar=e.clientY>=barRect.top;
-  const overPopup=document.querySelector('.popup-menu.show');
-  const inPopup=overPopup&&overPopup.getBoundingClientRect().top<=e.clientY&&e.clientX>=overPopup.getBoundingClientRect().left&&e.clientX<=overPopup.getBoundingClientRect().right;
-  if(splitActive||overBar||inPopup){tooltipEl.style.display='none';clusterEl.style.display='none';document.body.style.cursor='default';return;}
+  const overPanel=document.querySelector('.side-panel.show')||document.querySelector('#layer-panel.show');
+  const inPanel=overPanel&&e.clientX<=overPanel.getBoundingClientRect().right&&e.clientY>=overPanel.getBoundingClientRect().top&&e.clientY<=overPanel.getBoundingClientRect().bottom;
+  if(splitActive||overBar||inPanel){tooltipEl.style.display='none';clusterEl.style.display='none';document.body.style.cursor='default';return;}
   mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(mouse,camera);
   if(interiorHover(raycaster,e.clientX,e.clientY)){clusterEl.style.display='none';return;}
