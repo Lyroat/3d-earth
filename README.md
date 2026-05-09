@@ -16,6 +16,7 @@
 ### 🔶 板块构造
 - 基于 PB2002 科学数据集，绘制全球板块边界（汇聚边界、离散边界、转换断层）
 - 不同类型边界以不同颜色区分，鼠标悬停显示边界类型
+- 点击边界类型弹出知识卡片，展示对应图文说明
 - 14 个主要板块导航按钮，点击可旋转至对应板块位置并高亮
 - 板块拆分功能：点击后 14 个主要板块向外展开，直观展示板块形状与轮廓
 
@@ -27,38 +28,50 @@
 - 按类型筛选、搜索火山（支持中英文）
 - 点击火山自动推进放大，按 Esc 返回
 
+### 🌐 地球内部结构
+- 交互式剖面视图，展示地球分层结构
+- 七层可视化：地壳、岩石圈地幔、软流圈、过渡带、下地幔、外核、内核
+- 支持按层级聚焦：地幔/地核整体，上地幔/下地幔子层，以及岩石圈视图
+- 悬停显示各层详细信息：深度、温度、成分、物态
+- 自定义 Shader 渲染截面纹理，模拟真实地质质感
+
 ### 🎛 交互与 UI
-- 底部工具栏：板块导航、板块边界筛选、火山筛选、显示设置
-- 弹出式菜单，紧凑不遮挡视野
+- 左侧面板设计：板块导航、边界筛选、火山筛选、内部结构控制
+- 底部工具栏：功能模块切换（地形、板块、火山、内部结构）
 - 暂停/继续自动旋转
 - 隐藏/显示边界和火山
+- 键盘快捷键：Esc 返回/关闭面板
 
 ## 技术栈
 
-- **Three.js** — 3D 渲染（WebGL）
+- **Three.js 0.164** — 3D 渲染（WebGL）
 - **Line2 / LineMaterial** — 高质量线条渲染
-- **自定义 ShaderMaterial** — 地球表面均匀光照、凹凸贴图
-- **Python 构建脚本 (build.py)** — 将贴图、数据预处理并打包为单一 `index.html`
+- **自定义 ShaderMaterial** — 地球表面均匀光照、凹凸贴图、地球内部截面纹理
+- **Import Maps** — 原生 ES 模块加载，无需打包工具
 
 ## 项目结构
 
 ```
 3d-earth/
-├── build.py                  # 构建脚本，生成 index.html
-├── index.html                # 输出文件（可直接在浏览器打开）
-├── earth-b64.txt             # 地球贴图（Base64 编码）
-├── bump-b64.txt              # 凹凸贴图（Base64 编码）
-├── world_volcanoes.json      # 火山数据（1416 座，含中英文名）
-└── tectonicplates-master/    # 板块构造 GeoJSON 数据
+├── index.html                    # 页面结构（HTML）
+├── style.css                     # 样式表（CSS）
+├── app.js                        # 应用逻辑（JavaScript）
+├── textures/
+│   ├── 04.jpg                    # 地球表面贴图
+│   └── bump.jpg                  # 凹凸地形贴图
+├── plate boundary textures/      # 板块边界知识卡片图片
+├── world_volcanoes.json          # 火山数据（1416 座，含中英文名）
+├── tectonicplates-master/        # 板块构造 GeoJSON 数据
+├── build.py                      # 构建脚本（历史遗留，v2.0 后不再需要）
+├── earth-b64.txt                 # 地球贴图 Base64（历史遗留）
+└── bump-b64.txt                  # 凹凸贴图 Base64（历史遗留）
 ```
 
-## 构建
+## 运行
 
-```bash
-python3 build.py
-```
+直接在浏览器中打开 `index.html`，或部署到任意静态托管服务即可。
 
-生成的 `index.html` 包含所有资源，可直接部署或本地打开。
+> v2.0 起项目已拆分为独立的 HTML/CSS/JS 文件，无需构建步骤。
 
 ## 数据与资源来源
 
@@ -67,6 +80,13 @@ python3 build.py
 | 地球表面贴图 | [Solar System Scope](https://www.solarsystemscope.com/textures/) | 8K 高清地球日照贴图 |
 | 板块构造边界 | [@fraxen/tectonicplates](https://github.com/fraxen/tectonicplates) | PB2002 数据集，包含板块边界与板块多边形 |
 | 全球火山数据 | [Global Volcanism Program (GVP)](https://volcano.si.edu/) | 史密森尼学会全球火山计划，1416 座火山 |
+
+## 版本历史
+
+| 版本 | 说明 |
+|------|------|
+| v2.0 | 项目结构重构：HTML/CSS/JS 独立文件化，bump 贴图外部化；新增地球内部子层（岩石圈地幔、软流圈、过渡带）；修正板块边界术语 |
+| v1.x | 单文件架构，所有代码和贴图内嵌在 index.html 中 |
 
 ## 许可
 
