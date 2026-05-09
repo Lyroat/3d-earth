@@ -1,0 +1,114 @@
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;color:#fff}
+canvas{display:block}
+
+#loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#000;z-index:100;transition:opacity .8s}
+#loading.hidden{opacity:0;pointer-events:none}
+.spinner{width:48px;height:48px;border:3px solid rgba(255,255,255,.15);border-top-color:#4fc3f7;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Bottom Toolbar ── */
+#bottom-bar{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 16px;background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,.3) 80%,transparent);z-index:10;pointer-events:none}
+.tb-btn{pointer-events:auto;padding:6px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;position:relative}
+.tb-btn:hover{background:rgba(255,255,255,.14);color:#fff}
+.tb-btn.active{background:rgba(77,195,247,.18);border-color:rgba(77,195,247,.4);color:#fff}
+#pause-btn{pointer-events:auto;width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+#pause-btn:hover{background:rgba(255,255,255,.22)}
+.hint{pointer-events:none;font-size:10px;color:rgba(255,255,255,.35);white-space:nowrap;margin-left:6px}
+
+/* ── Popup Menu ── */
+.popup-menu{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:rgba(8,8,18,.92);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px;display:none;z-index:20;min-width:180px;max-height:420px;overflow-y:auto}
+.popup-menu.show{display:block}
+.pm-title{font-size:10px;color:rgba(255,255,255,.35);padding:4px 8px 6px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px}
+.pm-grid{display:flex;flex-wrap:wrap;gap:4px;padding:4px}
+.pm-search{position:relative;padding:4px 8px 8px}
+
+.chip{padding:4px 10px;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);font-size:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;font-family:inherit;line-height:1.4}
+.chip:hover{background:rgba(255,255,255,.12);color:#fff}
+.chip.off{opacity:.3}
+.chip.active{background:rgba(77,195,247,.2);border-color:rgba(77,195,247,.45);color:#fff}
+.chip .cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.chip .cline{width:20px;height:3px;border-radius:2px;flex-shrink:0;align-self:center}
+#boundary-grid .chip{white-space:normal;line-height:1.3}
+.chip small{color:rgba(255,255,255,.35);font-size:10px}
+
+#split-btn{padding:4px 12px;border:1px solid rgba(100,200,255,.25);border-radius:6px;background:rgba(100,200,255,.08);color:rgba(100,200,255,.85);font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s}
+#split-btn:hover{background:rgba(100,200,255,.18);color:#fff}
+#split-btn.active{background:rgba(100,200,255,.25);border-color:rgba(100,200,255,.5);color:#fff}
+
+/* ── Search ── */
+#volcano-search{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#fff;font-size:11px;padding:5px 10px;width:100%;outline:none;font-family:inherit;box-sizing:border-box}
+#volcano-search:focus{border-color:rgba(77,195,247,.5);background:rgba(255,255,255,.12)}
+#volcano-search::placeholder{color:rgba(255,255,255,.3)}
+#search-results{position:absolute;bottom:calc(100% + 4px);left:0;right:0;max-height:220px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
+.sr-item{padding:6px 12px;cursor:pointer;font-size:11px;color:rgba(255,255,255,.8);border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}
+.sr-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.sr-item:hover{background:rgba(77,195,247,.15);color:#fff}
+.sr-item:last-child{border-bottom:none}
+.sr-name{font-weight:500}.sr-sub{color:rgba(255,255,255,.4);font-size:10px}
+
+/* ── Tooltip ── */
+#tooltip{position:absolute;display:none;background:rgba(8,8,18,.88);backdrop-filter:blur(14px);padding:12px 16px;border-radius:12px;font-size:12px;color:rgba(255,255,255,.92);pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1);z-index:30;line-height:1.7}
+.tip-name-cn{font-size:14px;font-weight:600;margin-bottom:1px}
+.tip-name-en{color:rgba(255,255,255,.45);font-size:11px;margin-bottom:5px}
+.tip-sep{height:1px;background:rgba(255,255,255,.08);margin:5px 0}
+.tip-row{display:flex;gap:6px}
+.tip-label{color:rgba(255,255,255,.4);min-width:28px}
+.tip-val{color:rgba(255,255,255,.85)}
+.tip-en{color:rgba(255,255,255,.4);font-size:11px}
+
+/* ── Cluster Popup ── */
+#cluster-popup{position:absolute;display:none;background:rgba(8,8,18,.92);backdrop-filter:blur(16px);padding:12px;border-radius:12px;font-size:12px;color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.12);z-index:35;max-height:400px;overflow-y:auto;min-width:210px}
+.cl-title{font-weight:600;font-size:12px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08)}
+.cl-item{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .12s}
+.cl-item:hover{background:rgba(255,255,255,.1)}
+.cl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.cl-name{font-weight:500;font-size:12px}
+.cl-name small{font-weight:400;color:rgba(255,255,255,.4);font-size:10px;margin-left:3px}
+.cl-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+#cl-detail{margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);line-height:1.7;font-size:11px}
+
+/* ── Interior Layer Panel ── */
+#layer-panel{position:absolute;left:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;width:fit-content}
+#layer-panel.show{display:flex;flex-direction:column;gap:3px}
+.lp-btn{padding:7px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;text-align:left;display:flex;align-items:center;gap:8px}
+.lp-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+.lp-btn.active{background:rgba(77,195,247,.2);border-color:rgba(77,195,247,.45);color:#fff}
+.lp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.2)}
+.lp-btn.indent{margin-left:18px;font-size:12px;padding:5px 12px}
+.lp-btn.indent .lp-dot{width:8px;height:8px}
+.lp-btn.indent2{margin-left:36px;font-size:11px;padding:4px 10px}
+.lp-btn.indent2 .lp-dot{width:6px;height:6px}
+.lp-reset{padding:6px 14px;border:1px solid rgba(255,200,100,.2);border-radius:8px;background:rgba(255,200,100,.08);color:rgba(255,200,100,.8);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;text-align:center;margin-top:6px}
+.lp-reset:hover{background:rgba(255,200,100,.18);color:#fff}
+
+/* ── Side Panels (plates & volcano) ── */
+.side-panel{position:absolute;left:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;max-height:70vh;overflow-y:auto;width:fit-content}
+#volcano-panel{min-width:0}
+.side-panel.show{display:flex;flex-direction:column;gap:4px}
+.sp-section{margin-bottom:4px}
+.sp-section:last-child{margin-bottom:0}
+.sp-title{font-size:10px;color:rgba(255,255,255,.35);padding:2px 4px 6px;margin-bottom:4px;letter-spacing:.5px}
+.sp-grid{display:flex;flex-direction:column;gap:4px}
+.sp-grid .chip{width:100%;box-sizing:border-box}
+#volcano-grid .chip{width:auto}
+.sp-scroll{max-height:120px;overflow-y:auto;padding-right:2px}
+.sp-scroll::-webkit-scrollbar{width:4px}
+.sp-scroll::-webkit-scrollbar-track{background:transparent}
+.sp-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+.sp-scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3)}
+.sp-search{position:relative;padding:2px 0 0;min-width:0;width:100%}
+.sp-search #volcano-search{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#fff;font-size:12px;padding:5px 10px;width:100%;min-width:0;outline:none;font-family:inherit;box-sizing:border-box}
+.sp-search #volcano-search:focus{border-color:rgba(77,195,247,.5);background:rgba(255,255,255,.12)}
+.sp-search #volcano-search::placeholder{color:rgba(255,255,255,.3)}
+.sp-search #search-results{position:absolute;bottom:calc(100% + 4px);left:0;right:0;max-height:180px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
+#split-section #split-btn{width:100%;box-sizing:border-box;text-align:center}
+
+/* ── Knowledge Card (right side) ── */
+#knowledge-card{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;width:280px}
+#knowledge-card.show{display:flex;flex-direction:column;gap:8px}
+.kc-title{font-size:13px;font-weight:600;color:rgba(255,255,255,.9)}
+.kc-img{width:100%;border-radius:8px;display:block}
+.kc-close{position:absolute;top:8px;right:10px;background:none;border:none;color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s}
+.kc-close:hover{color:#fff;background:rgba(255,255,255,.1)}
+

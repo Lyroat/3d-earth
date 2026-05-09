@@ -5,6 +5,7 @@ __pycache__/
 # Large binary/data files
 textures/
 !textures/04.jpg
+!textures/bump.jpg
 tectonicplates-master/
 *.txt
 *.jpeg
