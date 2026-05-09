@@ -694,19 +694,7 @@ document.getElementById('lp-reset').addEventListener('click',e=>{
 });
 
 /* interior hover interaction - detect label sprites */
-function interiorHover(raycaster,ex,ey){
-  if(!interiorMode)return false;
-  const hits=raycaster.intersectObjects(labelSprites);
-  if(hits.length>0){
-    const L=hits[0].object.userData;
-    if(L&&L.name){
-      const tipContent=`<b>${L.name}</b>（${L.nameEn}）<br>深度：${L.depth}<br>温度：${L.temp}<br>组成：${L.comp}<br>状态：${L.state}`;
-      tooltipEl.innerHTML=tipContent;
-      posEl(tooltipEl,ex,ey);
-      document.body.style.cursor='pointer';
-      return true;
-    }
-  }
+function interiorHover(){
   return false;
 }
 
