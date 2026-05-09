@@ -105,9 +105,15 @@ canvas{display:block}
 #split-section #split-btn{width:100%;box-sizing:border-box;text-align:center}
 
 /* ── Knowledge Card (right side) ── */
-#knowledge-card{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;width:280px}
+#knowledge-card{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;width:300px;max-height:80vh;overflow-y:auto}
 #knowledge-card.show{display:flex;flex-direction:column;gap:8px}
-.kc-title{font-size:13px;font-weight:600;color:rgba(255,255,255,.9)}
+.kc-title{font-size:14px;font-weight:600;color:rgba(255,255,255,.9)}
+.kc-desc{font-size:12px;line-height:1.7;color:rgba(255,255,255,.75)}
+.kc-desc p{margin:0 0 6px}
+.kc-desc .kc-subtitle{font-size:11px;font-weight:600;color:rgba(255,200,100,.85);margin:8px 0 4px}
+.kc-desc ul{margin:2px 0 0;padding-left:16px;list-style:none}
+.kc-desc ul li{position:relative;padding-left:2px;margin-bottom:3px;font-size:11px;color:rgba(255,255,255,.65)}
+.kc-desc ul li::before{content:'·';position:absolute;left:-10px;color:rgba(255,200,100,.6)}
 .kc-img{width:100%;border-radius:8px;display:block}
 .kc-close{position:absolute;top:8px;right:10px;background:none;border:none;color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s}
 .kc-close:hover{color:#fff;background:rgba(255,255,255,.1)}

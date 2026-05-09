@@ -225,6 +225,7 @@ function togglePanel(name){
   const btn=document.getElementById('tb-'+name);
   if(activePanel===name){
     panel.classList.remove('show');btn.classList.remove('active');activePanel=null;
+    kcCard.classList.remove('show');
   }else{
     closeAllPanels();
     panel.classList.add('show');btn.classList.add('active');activePanel=name;
@@ -255,10 +256,13 @@ let activeVFilter=null;
       activeVFilter=null;
       vGrid.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
       volcanoSprites.forEach(sp=>{sp.visible=true;});
+      kcCard.classList.remove('show');
     }else{
       activeVFilter=o.s;
       vGrid.querySelectorAll('.chip').forEach(b=>b.classList.toggle('active',b.dataset.status===o.s));
       volcanoSprites.forEach(sp=>{sp.visible=(sp.userData.sc===o.s);});
+      const kc=KC_DATA['volcano-'+o.s];
+      if(kc) showKC(kc);
     }
   });
   vGrid.appendChild(btn);
@@ -278,9 +282,35 @@ const bGrid=document.getElementById('boundary-grid');
 let highlightBtype = null;
 const kcCard=document.getElementById('knowledge-card');
 const kcTitle=document.getElementById('kc-title');
+const kcDesc=document.getElementById('kc-desc');
 const kcImg=document.getElementById('kc-img');
 document.getElementById('kc-close').addEventListener('click',()=>kcCard.classList.remove('show'));
-const boundaryKC={c:{title:'汇聚型板块边界',img:'plate boundary textures/汇聚型板块边界.jpg'},d:{title:'离散型板块边界',img:'plate boundary textures/离散型板块边界.jpg'},t:{title:'转换断层',img:'plate boundary textures/转换断层.jpg'}};
+
+function showKC(kc){
+  kcTitle.textContent=kc.title;
+  kcDesc.innerHTML=kc.desc||'';
+  if(kc.img){kcImg.src=kc.img;kcImg.style.display='block';}else{kcImg.style.display='none';}
+  kcCard.classList.add('show');
+}
+
+const KC_DATA={
+  'boundary-c':{title:'汇聚型板块边界',img:'plate boundary textures/汇聚型板块边界.jpg',desc:'<p>两个板块相向运动，其中一个板块的前端在另一个板块下方滑动并向下弯曲。</p>'},
+  'boundary-d':{title:'离散型板块边界',img:'plate boundary textures/离散型板块边界.jpg',desc:'<p>两个板块相反运动，地幔热物质上涌并部分熔融，从而生成新洋底。</p>'},
+  'boundary-t':{title:'转换断层',img:'plate boundary textures/转换断层.jpg',desc:'<p>两个板块彼此交错滑动，不会发生岩石圈的增减。</p>'},
+  'crust':{title:'地壳',desc:'<p>地球最外层的固体外壳，是人类直接生活和活动的部分。</p><div class="kc-subtitle">关键特征</div><ul><li>厚度不均：大陆地壳约 30–70 千米，海洋地壳约 5–10 千米</li><li>主要成分：硅酸盐矿物（如长石、石英）</li><li>密度较低，是地球最"轻"的一层</li><li>与上地幔顶部共同构成岩石圈</li></ul>'},
+  'mantle':{title:'地幔',desc:'<p>位于地壳与地核之间的厚层结构，占地球体积约84%。</p><div class="kc-subtitle">关键特征</div><ul><li>深度范围：35–2900 千米处</li><li>主要成分：富含镁和铁的硅酸盐矿物（如橄榄石）</li><li>上地幔部分存在软流圈，具有塑性，可缓慢流动</li><li>是地幔对流的发生区域，驱动板块运动</li></ul>'},
+  'core':{title:'地核',desc:'<p>地球最内部的结构，主要由金属组成。</p><div class="kc-subtitle">关键特征</div><ul><li>分为：外核（液态）和内核（固态）</li><li>主要成分：铁、镍</li><li>外核流动形成地磁场</li><li>温度极高，可达 5000℃ 以上</li></ul>'},
+  'lithosphere':{title:'岩石圈',desc:'<p>地球最外层的刚性层，由地壳和上地幔最顶部组成。</p><div class="kc-subtitle">关键特征</div><ul><li>厚度：约 100 千米（海、陆变化较大）</li><li>被分割成多个板块</li><li>具有刚性，整体作为"板块"运动</li></ul>'},
+  'astheno':{title:'软流圈',desc:'<p>位于岩石圈之下的上地幔部分，具有塑性和流动性。</p><div class="kc-subtitle">关键特征</div><ul><li>深度范围：100–350 千米处</li><li>温度接近岩石熔点</li><li>不是液体，但可以缓慢流动</li><li>为板块运动提供"滑动基础"</li></ul>'},
+  'litho-mantle':{title:'岩石圈地幔',desc:'<p>上地幔最顶部的部分，属于刚性结构（岩石圈）的一部分。</p><div class="kc-subtitle">关键特征</div><ul><li>与地壳共同组成岩石圈</li><li>物质组成：以橄榄石矿物为主的超镁铁质岩石</li><li>具有刚性，不易流动</li><li>会随板块整体运动</li><li>与下方的软流圈在力学性质上明显不同</li></ul>'},
+  'transition':{title:'过渡带',desc:'<p>上地幔与下地幔之间的过渡区域。</p><div class="kc-subtitle">关键特征</div><ul><li>深度范围：410–660 千米处</li><li>主要特征：矿物发生高压相变（如橄榄石转变为更致密结构）</li><li>密度和地震波速度发生明显变化</li><li>对地幔对流起"阻挡或调节"作用（部分物质可穿越）</li></ul>'},
+  'lower-mantle':{title:'下地幔',desc:'<p>位于过渡带之下、外核之上的地幔部分。</p><div class="kc-subtitle">关键特征</div><ul><li>深度范围：660–2900 千米处</li><li>压力和温度极高</li><li>物质仍为固态，但可发生极缓慢流动</li><li>是深部地幔对流的重要区域</li><li>成分更加致密（如钙钛矿结构矿物）</li></ul>'},
+  'outer-core':{title:'外核',desc:'<p>地核的外层，为液态金属层。</p><div class="kc-subtitle">关键特征</div><ul><li>厚度：约 2270 千米</li><li>主要成分：液态铁、镍</li><li>可以流动，是地磁场产生的根本原因（地磁发电机机制）</li><li>横波无法通过（证明其为液态）</li></ul>'},
+  'inner-core':{title:'内核',desc:'<p>地球最中心的部分，为固态金属球体。</p><div class="kc-subtitle">关键特征</div><ul><li>半径：约 1216 千米</li><li>主要成分：铁、镍</li><li>温度极高，但因压力极大而保持固态</li><li>可能存在各向异性（地震波传播速度方向不同）</li></ul>'},
+  'volcano-a':{title:'活火山',desc:'<p>主要指一万年以来活动过的火山。</p><div class="kc-subtitle">关键特征</div><ul><li>目前仍有岩浆活动迹象（喷发、气体释放、地热等）</li><li>喷发具有不确定性</li><li>常伴随地震、地面形变</li><li>对人类具有潜在威胁</li></ul>'},
+  'volcano-d':{title:'休眠火山',desc:'<p>人类历史上喷发过，长期处在静止状态没有喷发，但在将来某个时候会喷发的活火山。</p><div class="kc-subtitle">关键特征</div><ul><li>当前处于"安静状态"</li><li>地下仍可能存在岩浆活动</li><li>喷发周期可能为数百年至数万年</li><li>判定难度较大（有一定不确定性）</li></ul>'},
+  'volcano-e':{title:'死火山',desc:'<p>过去一万年没有喷发历史，并且将来一万年不期望喷发的火山。</p><div class="kc-subtitle">关键特征</div><ul><li>岩浆供给系统已经消失</li><li>长期无任何活动迹象</li><li>通常与板块运动环境改变有关</li><li>地貌上可能仍保留火山形态</li></ul>'}
+};
 
 [{t:'c',c:'#ff4444',l:'汇聚型<br>板块边界'},{t:'d',c:'#44ff88',l:'离散型<br>板块边界'},{t:'t',c:'#ffcc33',l:'转换断层'}].forEach(o=>{
   const btn=document.createElement('div');btn.className='chip';btn.dataset.btype=o.t;
@@ -299,8 +329,8 @@ const boundaryKC={c:{title:'汇聚型板块边界',img:'plate boundary textures/
       if(p.btype===o.t){p.main.material.linewidth=2.8;p.main.material.opacity=1;p.glow.material.linewidth=7;p.glow.material.opacity=0.35;}
       else{p.main.material.opacity=0.1;p.glow.material.opacity=0.02;}
     });
-    const kc=boundaryKC[o.t];
-    if(kc){kcTitle.textContent=kc.title;kcImg.src=kc.img;kcCard.classList.add('show');}
+    const kc=KC_DATA['boundary-'+o.t];
+    if(kc) showKC(kc);
   });
   bGrid.appendChild(btn);
 });
@@ -602,6 +632,7 @@ function toggleInterior(){
     csMat.uniforms.uFocusMode.value=0.0;
     layerPanel.querySelectorAll('.lp-btn').forEach(b=>b.classList.remove('active'));
     updateLabelVisibility(null);
+    kcCard.classList.remove('show');
   }
 }
 document.getElementById('tb-interior').addEventListener('click',()=>togglePanel('interior'));
@@ -636,6 +667,7 @@ function setLayerFocus(key){
     csMat.uniforms.uFocusMode.value=0.0;
     btns.forEach(b=>b.classList.remove('active'));
     updateLabelVisibility(null);
+    kcCard.classList.remove('show');
     return;
   }
   activeLayer=key;
@@ -645,6 +677,8 @@ function setLayerFocus(key){
   csMat.uniforms.uFocusMode.value=1.0;
   btns.forEach(b=>b.classList.toggle('active',b.dataset.layer===key));
   updateLabelVisibility(range);
+  const kc=KC_DATA[key];
+  if(kc) showKC(kc); else kcCard.classList.remove('show');
 }
 layerPanel.querySelectorAll('.lp-btn').forEach(btn=>{
   btn.addEventListener('click',e=>{e.stopPropagation();setLayerFocus(btn.dataset.layer);});
@@ -655,6 +689,7 @@ document.getElementById('lp-reset').addEventListener('click',e=>{
   csMat.uniforms.uFocusMode.value=0.0;
   layerPanel.querySelectorAll('.lp-btn').forEach(b=>b.classList.remove('active'));
   updateLabelVisibility(null);
+  kcCard.classList.remove('show');
 });
 
 /* interior hover interaction - detect label sprites */
