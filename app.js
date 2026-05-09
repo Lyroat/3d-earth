@@ -408,6 +408,7 @@ const csFS=`
 uniform float uFocusMin;
 uniform float uFocusMax;
 uniform float uFocusMode;
+uniform float uTime;
 varying vec3 vPos;
 float hash2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float noise2d(vec2 p){
@@ -437,13 +438,15 @@ void main(){
     c=mix(vec3(1.0,1.0,0.92),vec3(1.0,0.97,0.75),t+n*0.15);
     c+=vec3(0.35,0.25,0.1)*(1.0-t);
   }else if(r<0.546){
-    /* Outer Core: bright molten orange-yellow with flame streaks */
+    /* Outer Core: animated molten flow */
     float t=(r-0.192)/(0.546-0.192);
+    float slow=uTime*0.15;
+    float med=uTime*0.3;
 
     vec2 polar=vec2(r*8.0, ang*3.0);
-    float flame1=fbm6(polar+vec2(0.3,0.7));
-    float flame2=fbm6(polar*1.5+vec2(2.1,1.3));
-    float streak=fbm6(vec2(ang*5.0+r*12.0, r*6.0));
+    float flame1=fbm6(polar+vec2(0.3-slow,0.7+slow*0.7));
+    float flame2=fbm6(polar*1.5+vec2(2.1-med,1.3-slow));
+    float streak=fbm6(vec2(ang*5.0+r*12.0-med*0.8, r*6.0-slow));
 
     vec3 hotCore=vec3(1.0,0.85,0.3);
     vec3 midOrange=vec3(1.0,0.55,0.08);
@@ -456,10 +459,13 @@ void main(){
     float streakMask=smoothstep(0.35,0.65,streak);
     c+=vec3(0.15,0.1,0.02)*streakMask;
 
+    float swirl=fbm6(vec2(ang*4.0-slow*1.2, r*10.0-slow*0.5));
+    c+=vec3(0.1,0.06,0.01)*smoothstep(0.4,0.7,swirl)*(1.0-t*0.5);
+
     float radialGlow=1.0-t*0.4;
     c*=radialGlow;
 
-    float detail=noise2d(vPos.xy*20.0);
+    float detail=noise2d(vPos.xy*20.0+vec2(slow*0.5));
     c+=vec3(0.08,0.04,0.0)*detail;
 
     c=clamp(c,0.0,1.0);
@@ -533,7 +539,7 @@ void main(){
 }`;
 const csMat=new THREE.ShaderMaterial({
   vertexShader:csVS,fragmentShader:csFS,
-  uniforms:{uFocusMin:{value:0.0},uFocusMax:{value:1.0},uFocusMode:{value:0.0}},
+  uniforms:{uFocusMin:{value:0.0},uFocusMax:{value:1.0},uFocusMode:{value:0.0},uTime:{value:0.0}},
   side:THREE.DoubleSide, transparent:true
 });
 
@@ -1048,6 +1054,7 @@ function syncRotY(){
   /* volcano pulse */
   volcanoSprites.forEach((sp,i)=>{if(sp.visible)sp.material.opacity=0.72+0.28*Math.sin(t*2.5+i*0.6);});
 
+  if(interiorMode) csMat.uniforms.uTime.value=t;
   earthMat.uniforms.uCam.value.copy(camera.position);
   renderer.render(scene,camera);
 })();
