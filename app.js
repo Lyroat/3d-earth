@@ -821,11 +821,6 @@ function deselectVolcano(){
 
 window.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
-    if(activePanel){
-      if(activePanel==='interior') toggleInterior();
-      else{ closeAllPanels(); activePanel=null; }
-      return;
-    }
     deselectVolcano();restoreView();
     tooltipEl.style.display='none';clusterEl.style.display='none';
     document.getElementById('search-results').style.display='none';
