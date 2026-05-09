@@ -1000,6 +1000,11 @@ renderer.domElement.addEventListener('pointermove',e=>{
 
 /* ══════════ Pause ══════════ */
 let autoRotate=true,manualPause=false,idleTimer;
+document.getElementById('reset-view-btn').addEventListener('click',()=>{
+  earth.rotation.y=0;syncRotY();
+  camera.position.set(0,0,3);camera.lookAt(controls.target);
+  controls.update();navAnim=null;savedView=null;
+});
 const pauseBtn=document.getElementById('pause-btn');
 pauseBtn.addEventListener('click',()=>{manualPause=!manualPause;autoRotate=!manualPause;pauseBtn.textContent=manualPause?'▶':'⏸';if(manualPause)clearTimeout(idleTimer);});
 controls.addEventListener('start',()=>{autoRotate=false;clearTimeout(idleTimer);});
