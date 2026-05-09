@@ -35,7 +35,8 @@ canvas{display:block}
 .chip.off{opacity:.3}
 .chip.active{background:rgba(77,195,247,.2);border-color:rgba(77,195,247,.45);color:#fff}
 .chip .cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.chip .cline{width:20px;height:3px;border-radius:2px;flex-shrink:0}
+.chip .cline{width:20px;height:3px;border-radius:2px;flex-shrink:0;align-self:center}
+#boundary-grid .chip{white-space:normal;line-height:1.3}
 .chip small{color:rgba(255,255,255,.35);font-size:10px}
 
 #split-btn{padding:4px 12px;border:1px solid rgba(100,200,255,.25);border-radius:6px;background:rgba(100,200,255,.08);color:rgba(100,200,255,.85);font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s}
@@ -108,6 +109,14 @@ canvas{display:block}
 .sp-search #search-results{position:absolute;bottom:calc(100% + 4px);left:0;right:0;max-height:180px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
 #split-section #split-btn{width:100%;box-sizing:border-box;text-align:center}
 
+/* ── Knowledge Card (right side) ── */
+#knowledge-card{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;width:280px}
+#knowledge-card.show{display:flex;flex-direction:column;gap:8px}
+.kc-title{font-size:13px;font-weight:600;color:rgba(255,255,255,.9)}
+.kc-img{width:100%;border-radius:8px;display:block}
+.kc-close{position:absolute;top:8px;right:10px;background:none;border:none;color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s}
+.kc-close:hover{color:#fff;background:rgba(255,255,255,.1)}
+
 </style>
 </head>
 <body>
@@ -148,6 +157,12 @@ canvas{display:block}
       <div id="search-results"></div>
     </div>
   </div>
+</div>
+
+<div id="knowledge-card">
+  <button class="kc-close" id="kc-close">&times;</button>
+  <div class="kc-title" id="kc-title"></div>
+  <img class="kc-img" id="kc-img" />
 </div>
 
 <div id="layer-panel">
@@ -386,6 +401,7 @@ function closeAllPanels(){
   document.getElementById('volcano-panel').classList.remove('show');
   document.getElementById('tb-plates').classList.remove('active');
   document.getElementById('tb-volcano').classList.remove('active');
+  document.getElementById('knowledge-card').classList.remove('show');
 }
 
 function togglePanel(name){
@@ -451,19 +467,31 @@ vGrid.appendChild(hideVBtn);
 /* ══════════ Boundary Filter ══════════ */
 const bGrid=document.getElementById('boundary-grid');
 let highlightBtype = null;
-[{t:'c',c:'#ff4444',l:'聚合边界'},{t:'d',c:'#44ff88',l:'分离边界'},{t:'t',c:'#ffcc33',l:'转换断层'}].forEach(o=>{
+const kcCard=document.getElementById('knowledge-card');
+const kcTitle=document.getElementById('kc-title');
+const kcImg=document.getElementById('kc-img');
+document.getElementById('kc-close').addEventListener('click',()=>kcCard.classList.remove('show'));
+const boundaryKC={c:{title:'汇聚型板块边界',img:'plate boundary textures/汇聚型板块边界.jpg'},d:{title:'分离型板块边界',img:'plate boundary textures/分离型板块边界.jpg'},t:{title:'转换断层',img:'plate boundary textures/转换断层.jpg'}};
+
+[{t:'c',c:'#ff4444',l:'聚合型<br>板块边界'},{t:'d',c:'#44ff88',l:'分离型<br>板块边界'},{t:'t',c:'#ffcc33',l:'转换断层'}].forEach(o=>{
   const btn=document.createElement('div');btn.className='chip';btn.dataset.btype=o.t;
   btn.innerHTML=`<span class="cline" style="background:${o.c};box-shadow:0 0 4px ${o.c}"></span>${o.l}`;
   btn.addEventListener('click',e=>{
     e.stopPropagation();
     clearPlateHighlight();
-    if(highlightBtype===o.t){highlightBtype=null;bGrid.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));resetBoundaryColors();return;}
+    if(highlightBtype===o.t){
+      highlightBtype=null;bGrid.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));resetBoundaryColors();
+      kcCard.classList.remove('show');
+      return;
+    }
     highlightBtype=o.t;
     bGrid.querySelectorAll('.chip').forEach(b=>b.classList.toggle('active',b.dataset.btype===o.t));
     bPairs.forEach(p=>{
       if(p.btype===o.t){p.main.material.linewidth=2.8;p.main.material.opacity=1;p.glow.material.linewidth=7;p.glow.material.opacity=0.35;}
       else{p.main.material.opacity=0.1;p.glow.material.opacity=0.02;}
     });
+    const kc=boundaryKC[o.t];
+    if(kc){kcTitle.textContent=kc.title;kcImg.src=kc.img;kcCard.classList.add('show');}
   });
   bGrid.appendChild(btn);
 });
@@ -476,6 +504,7 @@ hideBBtn.addEventListener('click',e=>{
 });
 bGrid.appendChild(hideBBtn);
 function resetBoundaryColors(){
+  kcCard.classList.remove('show');
   bPairs.forEach(p=>{
     p.main.material.color.setHex(p.origColor);p.main.material.linewidth=1.8;p.main.material.opacity=0.9;
     p.glow.material.color.setHex(p.origColor);p.glow.material.linewidth=4;p.glow.material.opacity=0.18;
