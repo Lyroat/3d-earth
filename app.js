@@ -431,76 +431,65 @@ void main(){
   vec3 c;
   float n;
   float ang=atan(vPos.y,vPos.x);
-  if(r<0.192){
-    /* Inner Core: bright white/yellow glow */
-    float t=r/0.192;
-    n=fbm(vPos.xy*6.0);
-    c=mix(vec3(1.0,1.0,0.92),vec3(1.0,0.97,0.75),t+n*0.15);
-    c+=vec3(0.35,0.25,0.1)*(1.0-t);
-  }else if(r<0.546){
-    /* Outer Core: animated molten flow */
-    float t=(r-0.192)/(0.546-0.192);
-    float slow=uTime*0.15;
-    float med=uTime*0.3;
+  if(r<0.957){
+    /* Continuous radial gradient across inner core / outer core / mantle */
+    float rr=r/0.957;
+    vec3 g0=vec3(1.0,1.0,0.92);
+    vec3 g1=vec3(1.0,0.93,0.55);
+    vec3 g2=vec3(1.0,0.60,0.15);
+    vec3 g3=vec3(0.88,0.33,0.05);
+    vec3 g4=vec3(0.52,0.13,0.03);
+    vec3 g5=vec3(0.25,0.07,0.03);
+    c=mix(g0,g1,smoothstep(0.0,0.18,rr));
+    c=mix(c,g2,smoothstep(0.12,0.42,rr));
+    c=mix(c,g3,smoothstep(0.38,0.62,rr));
+    c=mix(c,g4,smoothstep(0.58,0.82,rr));
+    c=mix(c,g5,smoothstep(0.78,1.0,rr));
 
-    vec2 polar=vec2(r*8.0, ang*3.0);
-    float flame1=fbm6(polar+vec2(0.3-slow,0.7+slow*0.7));
-    float flame2=fbm6(polar*1.5+vec2(2.1-med,1.3-slow));
-    float streak=fbm6(vec2(ang*5.0+r*12.0-med*0.8, r*6.0-slow));
+    if(r<0.192){
+      /* Inner Core: extra glow */
+      float t=r/0.192;
+      n=fbm(vPos.xy*6.0);
+      float icGlow=1.0-smoothstep(0.3,1.0,t);
+      c+=vec3(0.28,0.20,0.07)*icGlow;
+      c+=vec3(0.04,0.02,0.01)*n*icGlow;
+    }else if(r<0.546){
+      /* Outer Core: animated molten flow overlay */
+      float t=(r-0.192)/(0.546-0.192);
+      float slow=uTime*0.15;
+      float med=uTime*0.3;
+      float ocFade=smoothstep(0.0,0.2,t)*(1.0-smoothstep(0.8,1.0,t));
 
-    vec3 hotCore=vec3(1.0,0.85,0.3);
-    vec3 midOrange=vec3(1.0,0.55,0.08);
-    vec3 deepOrange=vec3(0.9,0.32,0.02);
+      vec2 polar=vec2(r*8.0, ang*3.0);
+      float flame1=fbm6(polar+vec2(0.3-slow,0.7+slow*0.7));
+      float flame2=fbm6(polar*1.5+vec2(2.1-med,1.3-slow));
+      float streak=fbm6(vec2(ang*5.0+r*12.0-med*0.8, r*6.0-slow));
+      float swirl=fbm6(vec2(ang*4.0-slow*1.2, r*10.0-slow*0.5));
+      float detail=noise2d(vPos.xy*20.0+vec2(slow*0.5));
 
-    float blend=t*0.6+flame1*0.25+flame2*0.15;
-    c=mix(hotCore,midOrange,smoothstep(0.0,0.5,blend));
-    c=mix(c,deepOrange,smoothstep(0.5,1.0,blend));
+      c+=vec3(0.10,0.05,0.01)*(flame1*0.6+flame2*0.4)*ocFade;
+      c+=vec3(0.08,0.04,0.01)*smoothstep(0.35,0.65,streak)*ocFade;
+      c+=vec3(0.06,0.03,0.01)*smoothstep(0.4,0.7,swirl)*(1.0-t*0.5)*ocFade;
+      c+=vec3(0.04,0.02,0.0)*detail*ocFade;
+    }else{
+      /* Mantle: rocky texture overlay */
+      float t=(r-0.546)/(0.957-0.546);
+      float mtFade=smoothstep(0.0,0.12,t);
+      float n1=fbm6(vPos.xy*5.0);
+      float n2=noise2d(vPos.xy*18.0);
+      float n4=noise2d(vPos.xy*70.0);
+      float grain=noise2d(vPos.xy*55.0)*0.5+noise2d(vPos.xy*90.0)*0.3+noise2d(vPos.xy*150.0)*0.2;
 
-    float streakMask=smoothstep(0.35,0.65,streak);
-    c+=vec3(0.15,0.1,0.02)*streakMask;
+      c+=vec3(0.03,0.008,0.003)*n1*mtFade;
+      c+=vec3(0.02,0.005,0.002)*n2*mtFade;
+      float rocky=smoothstep(0.3,0.7,grain);
+      c=mix(c,c*0.82,rocky*0.3*mtFade);
+      c+=vec3(0.01,0.003,0.0)*n4*mtFade;
 
-    float swirl=fbm6(vec2(ang*4.0-slow*1.2, r*10.0-slow*0.5));
-    c+=vec3(0.1,0.06,0.01)*smoothstep(0.4,0.7,swirl)*(1.0-t*0.5);
-
-    float radialGlow=1.0-t*0.4;
-    c*=radialGlow;
-
-    float detail=noise2d(vPos.xy*20.0+vec2(slow*0.5));
-    c+=vec3(0.08,0.04,0.0)*detail;
-
+      float hotSpot=smoothstep(0.6,0.8,noise2d(vPos.xy*8.0+vec2(n1)));
+      c+=vec3(0.04,0.01,0.0)*hotSpot*(1.0-t*0.7)*mtFade;
+    }
     c=clamp(c,0.0,1.0);
-    c*=1.15;
-  }else if(r<0.957){
-    /* Mantle (Lower Mantle + Transition Zone): dark rocky reddish-brown */
-    float t=(r-0.546)/(0.957-0.546);
-
-    float n1=fbm6(vPos.xy*5.0);
-    float n2=noise2d(vPos.xy*18.0);
-    float n3=noise2d(vPos.xy*40.0);
-    float n4=noise2d(vPos.xy*70.0);
-
-    float grain=noise2d(vPos.xy*55.0)*0.5+noise2d(vPos.xy*90.0)*0.3+noise2d(vPos.xy*150.0)*0.2;
-
-    vec3 innerMantle=vec3(0.45,0.10,0.03);
-    vec3 midMantle=vec3(0.32,0.07,0.03);
-    vec3 outerMantle=vec3(0.22,0.06,0.04);
-    vec3 base=mix(innerMantle,midMantle,smoothstep(0.0,0.5,t));
-    base=mix(base,outerMantle,smoothstep(0.5,1.0,t));
-
-    base+=vec3(0.06,0.015,0.005)*n1;
-    base+=vec3(0.04,0.01,0.005)*n2;
-
-    float rocky=smoothstep(0.3,0.7,grain);
-    base=mix(base,base*0.75,rocky*0.35);
-    base+=vec3(0.02,0.005,0.0)*n4;
-
-    float hotSpot=smoothstep(0.6,0.8,noise2d(vPos.xy*8.0+vec2(n1)));
-    base+=vec3(0.08,0.02,0.0)*hotSpot*(1.0-t*0.7);
-
-    float edgeGlow=smoothstep(0.02,0.0,abs(t-0.0))*0.12;
-    base+=vec3(0.5,0.15,0.02)*edgeGlow;
-
-    c=base;
   }else if(r<0.984){
     /* Asthenosphere: semi-molten transition, warm dark red-brown */
     float t=(r-0.957)/(0.984-0.957);
