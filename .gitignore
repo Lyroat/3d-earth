@@ -1,13 +1,6 @@
 *.pyc
 __pycache__/
 .DS_Store
-
-# Large binary/data files
-textures/
-!textures/04.jpg
-!textures/bump.jpg
-tectonicplates-master/
-*.txt
-*.jpeg
-*.json
-Composition-of-Earths-Mantle-*.jpeg
+build.py
+earth-b64.txt
+bump-b64.txt
