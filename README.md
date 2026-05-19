@@ -1,6 +1,6 @@
 # 3D Earth — 交互式三维地球
 
-一个基于 Three.js 的交互式 3D 地球网页应用，集成了板块构造边界和全球火山数据，可在浏览器中直接运行。
+一个基于 Three.js 的交互式 3D 地球网页应用，集成了板块构造、全球火山、地球内部结构和地磁场可视化，可在浏览器中直接运行。
 
 ## 在线体验
 
@@ -28,6 +28,14 @@
 - 按类型筛选、搜索火山（支持中英文）
 - 点击火山自动推进放大，按 Esc 返回
 
+### 🧲 地磁场
+- 基于 **IGRF-14**（国际地磁参考场，2025.0 纪元）高斯系数，球谐展开至 l=6 阶
+- RK4 数值积分追踪磁感线，从多个纬度带均匀播种
+- 磁感线颜色按纬度渐变：地磁北极区域蓝色，地磁南极区域红橙色，中间平滑过渡
+- 磁感线延伸至地球内部，连接中心条形磁铁
+- 开启磁场模式时地球半透明，可见内部条形磁铁（N 极朝南、S 极朝北）
+- 标注地磁北极和地磁南极位置
+
 ### 🌐 地球内部结构
 - 交互式剖面视图，展示地球分层结构
 - 七层可视化：地壳、岩石圈地幔、软流圈、过渡带、下地幔、外核、内核
@@ -37,7 +45,7 @@
 
 ### 🎛 交互与 UI
 - 左侧面板设计：板块导航、边界筛选、火山筛选、内部结构控制
-- 底部工具栏：功能模块切换（地形、板块、火山、内部结构）
+- 底部工具栏：功能模块切换（地形、板块、火山、内部结构、地磁场）
 - 暂停/继续自动旋转
 - 隐藏/显示边界和火山
 - 键盘快捷键：Esc 返回/关闭面板
@@ -45,8 +53,9 @@
 ## 技术栈
 
 - **Three.js 0.164** — 3D 渲染（WebGL）
-- **Line2 / LineMaterial** — 高质量线条渲染
+- **Line2 / LineMaterial** — 高质量粗线条渲染（磁感线、板块边界）
 - **自定义 ShaderMaterial** — 地球表面均匀光照、凹凸贴图、地球内部截面纹理
+- **IGRF-14 球谐模型** — 地磁场物理计算
 - **Import Maps** — 原生 ES 模块加载，无需打包工具
 
 ## 项目结构
@@ -55,16 +64,23 @@
 3d-earth/
 ├── index.html                    # 页面结构（HTML）
 ├── style.css                     # 样式表（CSS）
-├── app.js                        # 应用逻辑（JavaScript）
-├── textures/
-│   ├── 04.jpg                    # 地球表面贴图
+├── app.js                        # 应用主逻辑
+├── earth/
+│   ├── earth.js                  # 地球渲染模块
+│   ├── earth.jpg                 # 地球表面贴图
 │   └── bump.jpg                  # 凹凸地形贴图
-├── plate boundary textures/      # 板块边界知识卡片图片
+├── magnetic/
+│   └── magnetic.js               # 地磁场可视化模块（IGRF-14）
+├── plates/
+│   ├── plates.js                 # 板块构造模块
+│   └── split.js                  # 板块拆分动画
+├── volcanoes/
+│   └── volcanoes.js              # 火山数据模块
+├── interior/
+│   └── interior.js               # 地球内部结构模块
 ├── world_volcanoes.json          # 火山数据（1416 座，含中英文名）
 ├── tectonicplates-master/        # 板块构造 GeoJSON 数据
-├── build.py                      # 构建脚本（历史遗留，v2.0 后不再需要）
-├── earth-b64.txt                 # 地球贴图 Base64（历史遗留）
-└── bump-b64.txt                  # 凹凸贴图 Base64（历史遗留）
+└── build.py                      # 构建脚本（历史遗留，v2.0 后不再需要）
 ```
 
 ## 运行
@@ -80,11 +96,13 @@
 | 地球表面贴图 | [Solar System Scope](https://www.solarsystemscope.com/textures/) | 8K 高清地球日照贴图 |
 | 板块构造边界 | [@fraxen/tectonicplates](https://github.com/fraxen/tectonicplates) | PB2002 数据集，包含板块边界与板块多边形 |
 | 全球火山数据 | [Global Volcanism Program (GVP)](https://volcano.si.edu/) | 史密森尼学会全球火山计划，1416 座火山 |
+| 地磁场数据 | [IGRF-14](https://www.ngdc.noaa.gov/IAGA/vmod/igrf.html) | 国际地磁参考场第 14 代模型（2025.0 纪元），高斯系数展开至 l=6 阶，由 IAGA V-MOD 工作组发布 |
 
 ## 版本历史
 
 | 版本 | 说明 |
 |------|------|
+| v3.0 | 新增地磁场可视化（IGRF-14 模型）；项目模块化重构为独立目录结构 |
 | v2.0 | 项目结构重构：HTML/CSS/JS 独立文件化，bump 贴图外部化；新增地球内部子层（岩石圈地幔、软流圈、过渡带）；修正板块边界术语 |
 | v1.x | 单文件架构，所有代码和贴图内嵌在 index.html 中 |
 
