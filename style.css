@@ -104,6 +104,17 @@ canvas{display:block}
 .sp-search #search-results{position:absolute;bottom:calc(100% + 4px);left:0;right:0;max-height:180px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
 #split-section #split-btn{width:100%;box-sizing:border-box;text-align:center}
 
+/* ── Sun-Earth-Moon Panel ── */
+.sem-control{display:flex;align-items:center;gap:8px;padding:4px 0}
+.sem-label{font-size:11px;color:rgba(255,255,255,.5);min-width:28px}
+.sem-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,.15);outline:none}
+.sem-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#4fc3f7;cursor:pointer}
+.sem-val{font-size:11px;color:rgba(255,255,255,.6);min-width:24px;text-align:right}
+.sem-info{display:flex;flex-direction:column;gap:4px;padding:4px 0}
+.sem-info-item{font-size:11px;color:rgba(255,255,255,.55);line-height:1.6}
+#sem-panel{min-width:200px}
+#sem-panel .chip{font-size:11px;padding:4px 10px}
+
 /* ── Knowledge Card (right side) ── */
 #knowledge-card{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;width:300px;max-height:80vh;overflow-y:auto}
 #knowledge-card.show{display:flex;flex-direction:column;gap:8px}
