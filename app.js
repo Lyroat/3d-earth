@@ -347,8 +347,8 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     hideKC();
 
     if(isActive) {
-      if(key === 'plates'){ boundaryGroup.visible = false; gridGroup.visible = false; }
-      if(key === 'volcano') volcanoGroup.visible = false;
+      if(key === 'plates'){ boundaryGroup.visible = false; gridGroup.visible = false; document.getElementById('ep-show-plates').classList.remove('active'); }
+      if(key === 'volcano'){ volcanoGroup.visible = false; document.getElementById('ep-show-volcano').classList.remove('active'); }
       if(key === 'interior') interior.toggleInterior();
       return;
     }
