@@ -12,8 +12,8 @@ canvas{display:block}
 .tb-btn{pointer-events:auto;padding:6px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;position:relative}
 .tb-btn:hover{background:rgba(255,255,255,.14);color:#fff}
 .tb-btn.active{background:rgba(77,195,247,.18);border-color:rgba(77,195,247,.4);color:#fff}
-#pause-btn,#reset-view-btn{pointer-events:auto;width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
-#pause-btn:hover,#reset-view-btn:hover{background:rgba(255,255,255,.22)}
+#pause-btn{pointer-events:auto;width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+#pause-btn:hover{background:rgba(255,255,255,.22)}
 .hint{pointer-events:none;font-size:10px;color:rgba(255,255,255,.35);white-space:nowrap;margin-left:6px}
 
 /* ── Popup Menu ── */

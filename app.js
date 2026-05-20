@@ -451,6 +451,16 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     controls.update();navAnim=null;savedView=null;
     autoRotate=true;manualPause=false;pauseBtn.textContent='⏸';
   });
+  document.getElementById('reset-pos-btn').addEventListener('click', () => {
+    if(currentMode === 'sem') return;
+    earth.rotation.y=0;syncRotY();
+    camera.position.set(0,0,3);camera.lookAt(controls.target);
+    controls.target.set(0,0,0);
+    controls.minDistance = 2.0;
+    controls.maxDistance = 10;
+    controls.update();navAnim=null;savedView=null;
+  });
+
   pauseBtn.addEventListener('click', () => {
     manualPause=!manualPause;autoRotate=!manualPause;
     pauseBtn.textContent=manualPause?'▶':'⏸';
