@@ -74,6 +74,21 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
     }
   }
 
+  function forceComplete(earthMat){
+    splitProgress = 0;
+    splitDir = 0;
+    splitActive = false;
+    splitParent.visible = false;
+    if(deps.splitBtn){
+      deps.splitBtn.classList.remove('active');
+      deps.splitBtn.textContent = '🔄 拆分板块';
+    }
+    if(earthMat) earthMat.uniforms.uOpacity.value = 1;
+    for(const g of Object.values(splitGroups)){
+      g.position.set(0,0,0);
+    }
+  }
+
   function updateSplit(earthMat, boundaryGroup){
     if(splitDir === 0) return;
     splitProgress += splitDir * 0.018;
@@ -83,7 +98,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
       g.position.copy(g.userData.targetOffset.clone().multiplyScalar(ease));
     }
     earthMat.uniforms.uOpacity.value = 1 - ease * 0.6;
-    boundaryGroup.visible = ease < 0.5;
+    if(splitDir === 1) boundaryGroup.visible = ease < 0.5;
     if(splitProgress <= 0 && splitDir === -1){
       splitDir = 0; splitParent.visible = false;
       earthMat.uniforms.uOpacity.value = 1;
@@ -99,5 +114,6 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
     get splitDir(){ return splitDir; },
     toggleSplit,
     updateSplit,
+    forceComplete,
   };
 }

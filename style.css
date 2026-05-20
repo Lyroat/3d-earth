@@ -68,23 +68,20 @@ canvas{display:block}
 .cl-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
 #cl-detail{margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);line-height:1.7;font-size:11px}
 
-/* ── Interior Layer Panel ── */
-#layer-panel{position:absolute;left:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;width:fit-content}
-#layer-panel.show{display:flex;flex-direction:column;gap:3px}
-.lp-btn{padding:7px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;text-align:left;display:flex;align-items:center;gap:8px}
+/* ── Layer Buttons (embedded in earth panel) ── */
+.lp-btn{padding:5px 10px;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;text-align:left;display:flex;align-items:center;gap:6px;width:100%}
 .lp-btn:hover{background:rgba(255,255,255,.12);color:#fff}
 .lp-btn.active{background:rgba(77,195,247,.2);border-color:rgba(77,195,247,.45);color:#fff}
-.lp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.2)}
-.lp-btn.indent{margin-left:18px;font-size:12px;padding:5px 12px}
-.lp-btn.indent .lp-dot{width:8px;height:8px}
-.lp-btn.indent2{margin-left:36px;font-size:11px;padding:4px 10px}
+.lp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.2)}
+.lp-btn.indent{margin-left:14px;font-size:11px;padding:4px 8px}
+.lp-btn.indent .lp-dot{width:7px;height:7px}
+.lp-btn.indent2{margin-left:28px;font-size:10px;padding:3px 8px}
 .lp-btn.indent2 .lp-dot{width:6px;height:6px}
-.lp-reset{padding:6px 14px;border:1px solid rgba(255,200,100,.2);border-radius:8px;background:rgba(255,200,100,.08);color:rgba(255,200,100,.8);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;text-align:center;margin-top:6px}
+.lp-reset{padding:4px 10px;border:1px solid rgba(255,200,100,.2);border-radius:6px;background:rgba(255,200,100,.08);color:rgba(255,200,100,.8);font-size:11px;cursor:pointer;font-family:inherit;transition:all .2s;text-align:center;margin-top:4px;width:100%}
 .lp-reset:hover{background:rgba(255,200,100,.18);color:#fff}
 
-/* ── Side Panels (plates & volcano) ── */
+/* ── Side Panels ── */
 .side-panel{position:absolute;left:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;max-height:70vh;overflow-y:auto;width:fit-content}
-#volcano-panel{min-width:0}
 .side-panel.show{display:flex;flex-direction:column;gap:4px}
 .sp-section{margin-bottom:4px}
 .sp-section:last-child{margin-bottom:0}
@@ -101,7 +98,7 @@ canvas{display:block}
 .sp-search #volcano-search{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#fff;font-size:12px;padding:5px 10px;width:100%;min-width:0;outline:none;font-family:inherit;box-sizing:border-box}
 .sp-search #volcano-search:focus{border-color:rgba(77,195,247,.5);background:rgba(255,255,255,.12)}
 .sp-search #volcano-search::placeholder{color:rgba(255,255,255,.3)}
-.sp-search #search-results{position:absolute;bottom:calc(100% + 4px);left:0;right:0;max-height:180px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
+.sp-search #search-results{position:absolute;top:calc(100% + 4px);left:0;right:0;max-height:180px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
 #split-section #split-btn{width:100%;box-sizing:border-box;text-align:center}
 
 /* ── Sun-Earth-Moon Panel ── */
@@ -114,10 +111,23 @@ canvas{display:block}
 .sem-info-item{font-size:11px;color:rgba(255,255,255,.55);line-height:1.6}
 #sem-panel{min-width:200px}
 #sem-panel .chip{font-size:11px;padding:4px 10px}
+.sem-slider-short{max-width:66%}
+#earth-panel{min-width:180px;max-width:220px}
+#earth-panel .chip{width:100%;justify-content:flex-start;box-sizing:border-box}
+.ep-explore-btn{margin-bottom:2px}
+.ep-sub{display:none;padding:4px 0 6px 10px;margin:0 0 4px;border-left:2px solid rgba(77,195,247,.3)}
+.ep-sub.show{display:flex;flex-direction:column;gap:3px}
+.ep-sub-title{font-size:9px;color:rgba(255,255,255,.3);padding:4px 0 2px;letter-spacing:.5px}
 
 /* ── Knowledge Card (right side) ── */
 #knowledge-card{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;width:300px;max-height:80vh;overflow-y:auto}
 #knowledge-card.show{display:flex;flex-direction:column;gap:8px}
+
+/* ── SEM Stacking Cards ── */
+#sem-kc-stack{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;width:300px;max-height:80vh;overflow-y:auto;flex-direction:column;gap:10px}
+#sem-kc-stack.show{display:flex}
+.sem-kc-card{background:rgba(8,8,18,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;position:relative;display:flex;flex-direction:column;gap:6px}
+.sem-kc-card .kc-close{position:absolute;top:6px;right:8px}
 .kc-title{font-size:14px;font-weight:600;color:rgba(255,255,255,.9)}
 .kc-desc{font-size:12px;line-height:1.7;color:rgba(255,255,255,.75)}
 .kc-desc p{margin:0 0 6px}

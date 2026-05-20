@@ -14,90 +14,85 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   let semMoonMonth = 0;
   let semShowLabels = true;
   let semShowOrbits = true;
+  let viewMode = 'orbit';
+  let focusTarget = 'sun';
 
   const SEM_SCALE = {
     sunR: 2.0, earthOrbitR: 18, earthR: 0.35, moonOrbitR: 1.2, moonR: 0.095,
   };
 
+  const texLoader = new THREE.TextureLoader();
+
+  /* ======== Sun ======== */
   const sunGeo = new THREE.SphereGeometry(SEM_SCALE.sunR, 64, 64);
-  const sunMat = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 } },
-    vertexShader: `
-      varying vec2 vUv; varying vec3 vNorm;
-      void main(){
-        vUv = uv; vNorm = normalize(normalMatrix * normal);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-      }`,
-    fragmentShader: `
-      uniform float uTime; varying vec2 vUv; varying vec3 vNorm;
-      float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
-      float noise(vec2 p){
-        vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f);
-        return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
-      }
-      float fbm(vec2 p){
-        float v=0.0,a=0.5;
-        for(int i=0;i<5;i++){v+=noise(p)*a;p*=2.1;a*=0.5;}
-        return v;
-      }
-      void main(){
-        vec2 uv=vUv;
-        float n1=fbm(uv*6.0+vec2(uTime*0.02,0.0));
-        float n2=fbm(uv*10.0-vec2(0.0,uTime*0.03));
-        float n3=fbm(uv*3.0+vec2(uTime*0.01,uTime*0.015));
-        vec3 hot=vec3(1.0,0.95,0.8); vec3 warm=vec3(1.0,0.7,0.2); vec3 mid=vec3(1.0,0.45,0.05);
-        vec3 c=mix(hot,warm,n1); c=mix(c,mid,n2*0.4); c+=vec3(0.15,0.08,0.02)*n3;
-        c=clamp(c,0.0,1.0);
-        gl_FragColor=vec4(c,1.0);
-      }`,
-  });
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const sunMesh = new THREE.Mesh(sunGeo, sunMat);
   semGroup.add(sunMesh);
 
-  const sunGlowGeo = new THREE.SphereGeometry(SEM_SCALE.sunR * 1.3, 32, 32);
+  texLoader.load('sem/sun.jpg', tex => {
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    sunMat.map = tex;
+    sunMat.needsUpdate = true;
+  });
+
+  const sunGlowGeo = new THREE.SphereGeometry(SEM_SCALE.sunR * 1.25, 32, 32);
   const sunGlowMat = new THREE.ShaderMaterial({
-    uniforms: {},
     vertexShader: `varying vec3 vNorm;void main(){vNorm=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-    fragmentShader: `varying vec3 vNorm;void main(){float i=pow(0.7-dot(vNorm,vec3(0,0,1)),2.0);gl_FragColor=vec4(1.0,0.7,0.2,i*0.5);}`,
+    fragmentShader: `varying vec3 vNorm;void main(){float i=pow(0.65-dot(vNorm,vec3(0,0,1)),2.5);gl_FragColor=vec4(1.0,0.75,0.2,i*0.45);}`,
     transparent: true, side: THREE.BackSide, depthWrite: false
   });
   semGroup.add(new THREE.Mesh(sunGlowGeo, sunGlowMat));
 
-  semGroup.add(new THREE.PointLight(0xffffff, 2, 100));
-  semGroup.add(new THREE.AmbientLight(0x222244, 0.3));
+  const sunLight = new THREE.PointLight(0xfffbe8, 800, 0, 2);
+  semGroup.add(sunLight);
+  semGroup.add(new THREE.AmbientLight(0x111122, 0.4));
 
+  /* ======== Earth ======== */
   const earthOrbitPivot = new THREE.Group();
   semGroup.add(earthOrbitPivot);
 
-  const semEarthGeo = new THREE.SphereGeometry(SEM_SCALE.earthR, 48, 48);
-  const semEarthMat = new THREE.MeshPhongMaterial({ color: 0x4488cc, emissive: 0x112233, shininess: 25 });
-  const semEarthMesh = new THREE.Mesh(semEarthGeo, semEarthMat);
-  semEarthMesh.position.set(SEM_SCALE.earthOrbitR, 0, 0);
-  semEarthMesh.rotation.x = TILT;
-  earthOrbitPivot.add(semEarthMesh);
+  const earthTiltGroup = new THREE.Group();
+  earthTiltGroup.position.set(SEM_SCALE.earthOrbitR, 0, 0);
+  earthOrbitPivot.add(earthTiltGroup);
 
-  const texLoader = new THREE.TextureLoader();
+  const semEarthGeo = new THREE.SphereGeometry(SEM_SCALE.earthR, 48, 48);
+  const semEarthMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x000000, shininess: 15 });
+  const semEarthMesh = new THREE.Mesh(semEarthGeo, semEarthMat);
+  semEarthMesh.rotation.x = TILT;
+  earthTiltGroup.add(semEarthMesh);
+
   texLoader.load('earth/earth.jpg', tex => {
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    semEarthMat.map = tex; semEarthMat.color.set(0xffffff); semEarthMat.needsUpdate = true;
+    semEarthMat.map = tex;
+    semEarthMat.needsUpdate = true;
   });
 
+  /* ======== Moon ======== */
   const moonOrbitPivot = new THREE.Group();
-  moonOrbitPivot.position.set(SEM_SCALE.earthOrbitR, 0, 0);
-  earthOrbitPivot.add(moonOrbitPivot);
+  moonOrbitPivot.position.set(0, 0, 0);
+  earthTiltGroup.add(moonOrbitPivot);
   moonOrbitPivot.rotation.x = THREE.MathUtils.degToRad(5.14);
 
+  const semMoonMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x000000, shininess: 5 });
   const semMoonMesh = new THREE.Mesh(
     new THREE.SphereGeometry(SEM_SCALE.moonR, 32, 32),
-    new THREE.MeshPhongMaterial({ color: 0xbbbbbb, emissive: 0x111111, shininess: 5 })
+    semMoonMat
   );
   semMoonMesh.position.set(SEM_SCALE.moonOrbitR, 0, 0);
+  semMoonMesh.rotation.y = Math.PI;
   moonOrbitPivot.add(semMoonMesh);
 
-  function makeOrbitRing(radius, color, parent, segments){
+  texLoader.load('sem/moon.jpg', tex => {
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    semMoonMat.map = tex;
+    semMoonMat.needsUpdate = true;
+  });
+
+  /* ======== Orbit lines ======== */
+  function makeOrbitRing(radius, color, parent, segments) {
     segments = segments || 128;
     const pts = [];
-    for(let i = 0; i <= segments; i++){
+    for (let i = 0; i <= segments; i++) {
       const a = (i / segments) * Math.PI * 2;
       pts.push(radius * Math.cos(a), 0, radius * Math.sin(a));
     }
@@ -110,14 +105,14 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   const earthOrbitLine = makeOrbitRing(SEM_SCALE.earthOrbitR, 0x4488cc, semGroup, 256);
   const moonOrbitLine = makeOrbitRing(SEM_SCALE.moonOrbitR, 0x888888, moonOrbitPivot, 64);
 
+  /* ======== Earth axis ======== */
   const axGeo = new THREE.CylinderGeometry(0.008, 0.008, SEM_SCALE.earthR * 2.8, 6);
-  const axMat = new THREE.MeshBasicMaterial({ color: 0xff6666, transparent: true, opacity: 0.6 });
-  const axMesh = new THREE.Mesh(axGeo, axMat);
-  axMesh.position.set(SEM_SCALE.earthOrbitR, 0, 0);
+  const axMesh = new THREE.Mesh(axGeo, new THREE.MeshBasicMaterial({ color: 0xff6666, transparent: true, opacity: 0.6 }));
   axMesh.rotation.x = TILT;
-  earthOrbitPivot.add(axMesh);
+  earthTiltGroup.add(axMesh);
 
-  function makeSEMLabel(text, color, size){
+  /* ======== Labels ======== */
+  function makeSEMLabel(text, color, size) {
     const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
     const ctx = cv.getContext('2d');
     ctx.font = 'bold 36px PingFang SC,sans-serif';
@@ -130,46 +125,46 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     return sp;
   }
 
-  const sunLabel = makeSEMLabel('太阳', '#FFD700', 2.5);
-  sunLabel.position.set(0, SEM_SCALE.sunR + 0.8, 0);
-  semGroup.add(sunLabel);
-
-  const earthLabel = makeSEMLabel('地球', '#88ccff', 1.0);
-  earthLabel.position.set(SEM_SCALE.earthOrbitR, SEM_SCALE.earthR + 0.3, 0);
-  earthOrbitPivot.add(earthLabel);
-
-  const moonLabel = makeSEMLabel('月球', '#cccccc', 0.6);
-  moonLabel.position.set(SEM_SCALE.moonOrbitR, SEM_SCALE.moonR + 0.15, 0);
-  moonOrbitPivot.add(moonLabel);
-
   const semInfoLabels = [];
-  function makeSEMInfoLabel(text, pos, parent){
-    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 64;
-    const ctx = cv.getContext('2d');
-    ctx.font = '24px PingFang SC,sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(text, 256, 32);
-    const tex = new THREE.CanvasTexture(cv);
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-    sp.scale.set(2.5, 0.32, 1);
-    sp.position.copy(pos);
-    parent.add(sp);
-    semInfoLabels.push(sp);
-    return sp;
-  }
-  makeSEMInfoLabel('公转轨道', new THREE.Vector3(0, -0.5, -SEM_SCALE.earthOrbitR), semGroup);
-  makeSEMInfoLabel('自转轴倾斜23.4°', new THREE.Vector3(SEM_SCALE.earthOrbitR + 1.2, SEM_SCALE.earthR + 0.6, 0), earthOrbitPivot);
 
-  function toggleSEM(deps){
+  /* ======== Solstice / Equinox markers ======== */
+  const seasonAngles = {
+    spring: 0,
+    summer: Math.PI / 2,
+    autumn: Math.PI,
+    winter: 3 * Math.PI / 2
+  };
+  const seasonNames = { spring: '北分点', summer: '南至点', autumn: '南分点', winter: '北至点' };
+  const seasonColors = { spring: '#44cc66', summer: '#66aaff', autumn: '#cc8844', winter: '#ffaa22' };
+
+  const seasonMarkers = {};
+  Object.entries(seasonAngles).forEach(([key, angle]) => {
+    const x = SEM_SCALE.earthOrbitR * Math.cos(angle);
+    const z = SEM_SCALE.earthOrbitR * Math.sin(angle);
+
+    const dotGeo = new THREE.SphereGeometry(0.18, 12, 12);
+    const dotMat = new THREE.MeshBasicMaterial({ color: seasonColors[key] });
+    const dot = new THREE.Mesh(dotGeo, dotMat);
+    dot.position.set(x, 0, z);
+    semGroup.add(dot);
+
+    const lbl = makeSEMLabel(seasonNames[key], seasonColors[key], 1.0);
+    lbl.position.set(x, 0.6, z);
+    semGroup.add(lbl);
+
+    seasonMarkers[key] = { angle, dot, lbl };
+  });
+
+  /* ======== Toggle SEM mode ======== */
+  function toggleSEM(deps) {
     semMode = !semMode;
     semGroup.visible = semMode;
     document.getElementById('tb-sem').classList.toggle('active', semMode);
 
-    if(semMode){
+    if (semMode) {
       deps.closeAllPanels();
-      if(deps.getInteriorMode()) deps.toggleInterior();
-      if(deps.getMagneticMode()) deps.toggleMagnetic();
+      if (deps.getInteriorMode()) deps.toggleInterior();
+      if (deps.getMagneticMode()) deps.toggleMagnetic();
       deps.setActivePanel(null);
 
       deps.earth.visible = false;
@@ -181,82 +176,183 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
 
       deps.setAutoRotate(false);
       deps.setManualPause(true);
-      document.getElementById('pause-btn').textContent = '▶';
+      document.getElementById('pause-btn').textContent = '\u25B6';
 
-      controls.target.set(0,0,0);
-      controls.minDistance = 5;
-      controls.maxDistance = 60;
-      camera.position.set(0, 15, 30);
-      camera.lookAt(0,0,0);
-      controls.update();
+      applyView('orbit');
       document.getElementById('sem-panel').classList.add('show');
     } else {
       deps.earth.visible = true;
-      deps.boundaryGroup.visible = true;
-      deps.volcanoGroup.visible = true;
-      deps.gridGroup.visible = true;
 
-      controls.target.set(0,0,0);
+      controls.target.set(0, 0, 0);
       controls.minDistance = 2.0;
       controls.maxDistance = 10;
-      camera.position.set(0,0,3);
-      camera.lookAt(0,0,0);
+      camera.position.set(0, 0, 3);
+      camera.lookAt(0, 0, 0);
       controls.update();
       document.getElementById('sem-panel').classList.remove('show');
+      viewMode = 'orbit';
     }
   }
 
-  function updateSEM(dt){
-    if(!semMode) return;
-    const earthAngularSpeed = 0.15 * semSpeed;
-    const moonAngularSpeed = earthAngularSpeed * (365.25 / 27.32);
-    const earthRotSpeed = earthAngularSpeed * 365.25;
-    semEarthYear += earthAngularSpeed * dt;
-    semMoonMonth += moonAngularSpeed * dt;
+  /* ======== View modes ======== */
+  function applyView(mode) {
+    viewMode = mode;
+    document.getElementById('sem-view-orbit').classList.toggle('active', mode === 'orbit');
+    document.getElementById('sem-view-rotate').classList.toggle('active', mode === 'rotate');
+
+    if (mode === 'orbit') {
+      focusTarget = 'sun';
+      controls.target.set(0, 0, 0);
+      controls.minDistance = 5;
+      controls.maxDistance = 60;
+      camera.position.set(0, 15, 30);
+      camera.lookAt(0, 0, 0);
+      controls.update();
+    } else if (mode === 'rotate') {
+      focusTarget = 'earth';
+      controls.minDistance = 0.8;
+      controls.maxDistance = 5;
+      const ep = getEarthWorldPos();
+      controls.target.copy(ep);
+      camera.position.set(ep.x + 1.5, ep.y + 0.5, ep.z + 1.5);
+      camera.lookAt(ep);
+      controls.update();
+    }
+  }
+
+  function applyFocus(target) {
+    focusTarget = target;
+    document.getElementById('sem-focus-sun').classList.toggle('active', target === 'sun');
+    document.getElementById('sem-focus-earth').classList.toggle('active', target === 'earth');
+
+    if (target === 'sun') {
+      controls.target.set(0, 0, 0);
+      controls.minDistance = 5;
+      controls.maxDistance = 60;
+      camera.position.set(0, 15, 30);
+      camera.lookAt(0, 0, 0);
+      controls.update();
+    } else if (target === 'earth') {
+      controls.minDistance = 0.5;
+      controls.maxDistance = 5;
+      const ep = getEarthWorldPos();
+      controls.target.copy(ep);
+      camera.position.set(ep.x + 0.8, ep.y + 0.4, ep.z + 0.8);
+      camera.lookAt(ep);
+      controls.update();
+    }
+  }
+
+  function getEarthWorldPos() {
+    const pos = new THREE.Vector3();
+    semEarthMesh.getWorldPosition(pos);
+    return pos;
+  }
+
+  function moveToSeason(key) {
+    const angle = seasonAngles[key];
+    semEarthYear = angle;
+    semMoonMonth = angle * (365.25 / 27.32);
     earthOrbitPivot.rotation.y = semEarthYear;
-    semEarthMesh.rotation.y = earthRotSpeed * performance.now() * 0.001 * 0.05;
     moonOrbitPivot.rotation.y = semMoonMonth;
-    sunMat.uniforms.uTime.value = performance.now() * 0.001;
-    [sunLabel, earthLabel, moonLabel, ...semInfoLabels].forEach(sp => { sp.visible = semShowLabels; });
+    if (viewMode === 'rotate') {
+      const ep = getEarthWorldPos();
+      controls.target.copy(ep);
+      camera.position.set(ep.x + 1.5, ep.y + 0.5, ep.z + 1.5);
+      camera.lookAt(ep);
+      controls.update();
+    }
+  }
+
+  /* ======== Update ======== */
+  function updateSEM(dt) {
+    if (!semMode) return;
+
+    if (viewMode === 'rotate') {
+      semEarthMesh.rotation.y += 0.01 * semSpeed;
+    } else {
+      const earthAngularSpeed = 0.15 * semSpeed;
+      const moonAngularSpeed = earthAngularSpeed * (365.25 / 27.32);
+      semEarthYear += earthAngularSpeed * dt;
+      semMoonMonth += moonAngularSpeed * dt;
+      earthOrbitPivot.rotation.y = semEarthYear;
+      semEarthMesh.rotation.y += 0.02 * semSpeed;
+      moonOrbitPivot.rotation.y = semMoonMonth;
+    }
+
+    earthTiltGroup.rotation.y = -earthOrbitPivot.rotation.y;
+
+    sunMesh.rotation.y += 0.002 * semSpeed;
+
+    if (focusTarget === 'earth' && viewMode !== 'rotate') {
+      const ep = getEarthWorldPos();
+      controls.target.lerp(ep, 0.08);
+    }
+
+    Object.values(seasonMarkers).forEach(m => { m.lbl.visible = semShowLabels; });
     earthOrbitLine.visible = semShowOrbits;
     moonOrbitLine.visible = semShowOrbits;
   }
 
-  /* SEM controls */
-  (function initSEMControls(){
+  /* ======== Controls ======== */
+  (function initSEMControls() {
     const speedSlider = document.getElementById('sem-speed');
     const speedVal = document.getElementById('sem-speed-val');
-    if(speedSlider){
+    if (speedSlider) {
       speedSlider.addEventListener('input', () => {
         semSpeed = parseFloat(speedSlider.value);
-        speedVal.textContent = semSpeed.toFixed(1) + '×';
+        speedVal.textContent = semSpeed.toFixed(1) + '\u00d7';
       });
     }
+
     const toggleLabelsBtn = document.getElementById('sem-toggle-labels');
-    if(toggleLabelsBtn){
+    if (toggleLabelsBtn) {
       toggleLabelsBtn.classList.add('active');
-      toggleLabelsBtn.addEventListener('click', () => { semShowLabels = !semShowLabels; toggleLabelsBtn.classList.toggle('active', semShowLabels); });
+      toggleLabelsBtn.addEventListener('click', () => {
+        semShowLabels = !semShowLabels;
+        toggleLabelsBtn.classList.toggle('active', semShowLabels);
+      });
     }
+
     const toggleOrbitsBtn = document.getElementById('sem-toggle-orbits');
-    if(toggleOrbitsBtn){
+    if (toggleOrbitsBtn) {
       toggleOrbitsBtn.classList.add('active');
-      toggleOrbitsBtn.addEventListener('click', () => { semShowOrbits = !semShowOrbits; toggleOrbitsBtn.classList.toggle('active', semShowOrbits); });
+      toggleOrbitsBtn.addEventListener('click', () => {
+        semShowOrbits = !semShowOrbits;
+        toggleOrbitsBtn.classList.toggle('active', semShowOrbits);
+      });
     }
+
     let semPaused = false;
     const semPauseBtn = document.getElementById('sem-pause');
-    if(semPauseBtn){
+    if (semPauseBtn) {
       semPauseBtn.addEventListener('click', () => {
         semPaused = !semPaused;
         semSpeed = semPaused ? 0 : parseFloat(speedSlider.value);
-        semPauseBtn.textContent = semPaused ? '▶ 继续' : '⏸ 暂停';
+        semPauseBtn.textContent = semPaused ? '\u25B6 继续' : '\u23F8 暂停';
         semPauseBtn.classList.toggle('active', semPaused);
       });
     }
+
+    const viewOrbitBtn = document.getElementById('sem-view-orbit');
+    const viewRotateBtn = document.getElementById('sem-view-rotate');
+    if (viewOrbitBtn) viewOrbitBtn.addEventListener('click', () => applyView('orbit'));
+    if (viewRotateBtn) viewRotateBtn.addEventListener('click', () => applyView('rotate'));
+
+    const focusSunBtn = document.getElementById('sem-focus-sun');
+    const focusEarthBtn = document.getElementById('sem-focus-earth');
+    if (focusSunBtn) focusSunBtn.addEventListener('click', () => applyFocus('sun'));
+    if (focusEarthBtn) focusEarthBtn.addEventListener('click', () => applyFocus('earth'));
+
+    Object.keys(seasonAngles).forEach(key => {
+      const btn = document.getElementById('sem-' + key);
+      if (btn) btn.addEventListener('click', () => moveToSeason(key));
+    });
   })();
 
   return {
     semGroup,
-    get semMode(){ return semMode; },
+    get semMode() { return semMode; },
     toggleSEM,
     updateSEM,
   };

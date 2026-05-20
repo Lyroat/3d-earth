@@ -12,43 +12,64 @@
 <div id="bottom-bar">
   <button id="reset-view-btn" title="复位视角">↺</button>
   <button id="pause-btn" title="暂停/继续自转">⏸</button>
-  <button class="tb-btn" id="tb-terrain">🏔 地形</button>
-  <button class="tb-btn" id="tb-plates">🌍 地球板块</button>
-  <button class="tb-btn" id="tb-volcano">🌋 火山分布</button>
-  <button class="tb-btn" id="tb-interior">🌐 地球内部</button>
-  <button class="tb-btn" id="tb-magnetic">🧲 地磁场</button>
-  <button class="tb-btn" id="tb-sem">☀️ 日地月</button>
-  <span class="hint">拖动旋转 · 滚轮缩放 · 双击放大 · ESC 返回</span>
+  <button class="tb-btn" id="tb-earth">🌏 地球</button>
+  <button class="tb-btn" id="tb-sem">☀️ 日-地-月系统</button>
 </div>
 
 <div id="tooltip"></div>
 <div id="cluster-popup"></div>
 
-<div class="side-panel" id="plates-panel">
-  <div class="sp-section" id="split-section"></div>
+<!-- ══ 地球面板（含内容显示 + 地球探索 + 内嵌子面板）══ -->
+<div class="side-panel" id="earth-panel">
+  <!-- 内容显示 -->
   <div class="sp-section">
-    <div class="sp-title">板块导航</div>
-    <div class="sp-grid sp-scroll" id="plate-grid"></div>
-  </div>
-  <div class="sp-section">
-    <div class="sp-title">板块边界</div>
-    <div class="sp-grid" id="boundary-grid"></div>
-  </div>
-</div>
-
-<div class="side-panel" id="volcano-panel">
-  <div class="sp-section">
-    <div class="sp-title">火山类型</div>
-    <div class="sp-grid" id="volcano-grid"></div>
-  </div>
-  <div class="sp-section">
-    <div class="sp-search">
-      <input type="text" id="volcano-search" placeholder="搜索火山" autocomplete="off" size="1" />
-      <div id="search-results"></div>
+    <div class="sp-title">内容显示</div>
+    <div class="sp-grid">
+      <button class="chip" id="ep-terrain">🏔 显示地形</button>
+      <button class="chip" id="ep-show-plates">🌍 显示板块</button>
+      <button class="chip" id="ep-show-volcano">🌋 显示火山</button>
     </div>
   </div>
+  <!-- 地球探索 -->
+  <div class="sp-section">
+    <div class="sp-title">地球探索</div>
+    <button class="chip ep-explore-btn" id="ep-plates">🌍 地球板块</button>
+    <div class="ep-sub" id="plates-sub">
+      <div id="split-section"></div>
+      <div class="ep-sub-title">板块导航</div>
+      <div class="sp-grid sp-scroll" id="plate-grid"></div>
+      <div class="ep-sub-title">板块边界</div>
+      <div class="sp-grid" id="boundary-grid"></div>
+    </div>
+    <button class="chip ep-explore-btn" id="ep-volcano">🌋 火山分布</button>
+    <div class="ep-sub" id="volcano-sub">
+      <div class="ep-sub-title">火山类型</div>
+      <div class="sp-grid" id="volcano-grid"></div>
+      <div class="sp-search">
+        <input type="text" id="volcano-search" placeholder="搜索火山" autocomplete="off" size="1" />
+        <div id="search-results"></div>
+      </div>
+    </div>
+    <button class="chip ep-explore-btn" id="ep-interior">🌐 地球内部</button>
+    <div class="ep-sub" id="interior-sub">
+      <button class="lp-btn" data-layer="crust"><span class="lp-dot" style="background:#8B4513"></span>地壳</button>
+      <button class="lp-btn" data-layer="mantle"><span class="lp-dot" style="background:#CC4400"></span>地幔</button>
+      <button class="lp-btn indent" data-layer="upper-mantle"><span class="lp-dot" style="background:#E65C00"></span>上地幔</button>
+      <button class="lp-btn indent2" data-layer="litho-mantle"><span class="lp-dot" style="background:#556B2F"></span>岩石圈地幔</button>
+      <button class="lp-btn indent2" data-layer="astheno"><span class="lp-dot" style="background:#CC4400"></span>软流圈</button>
+      <button class="lp-btn indent2" data-layer="transition"><span class="lp-dot" style="background:#E65C00"></span>过渡带</button>
+      <button class="lp-btn indent" data-layer="lower-mantle"><span class="lp-dot" style="background:#B22222"></span>下地幔</button>
+      <button class="lp-btn" data-layer="core"><span class="lp-dot" style="background:#FF8C00"></span>地核</button>
+      <button class="lp-btn indent" data-layer="outer-core"><span class="lp-dot" style="background:#FF8C00"></span>外核</button>
+      <button class="lp-btn indent" data-layer="inner-core"><span class="lp-dot" style="background:#FFD700"></span>内核</button>
+      <button class="lp-btn" data-layer="lithosphere"><span class="lp-dot" style="background:#556B2F"></span>岩石圈</button>
+      <button class="lp-reset" id="lp-reset">↻ 显示全部</button>
+    </div>
+    <button class="chip ep-explore-btn" id="ep-magnetic">🧲 地球磁场</button>
+  </div>
 </div>
 
+<!-- ══ 知识卡片（地球模式用） ══ -->
 <div id="knowledge-card">
   <button class="kc-close" id="kc-close">&times;</button>
   <div class="kc-title" id="kc-title"></div>
@@ -56,47 +77,51 @@
   <img class="kc-img" id="kc-img" />
 </div>
 
+<!-- ══ SEM 科普卡片堆叠容器 ══ -->
+<div id="sem-kc-stack"></div>
+
+<!-- ══ 日-地-月系统面板 ══ -->
 <div class="side-panel" id="sem-panel">
   <div class="sp-section">
-    <div class="sp-title">日地月系统</div>
+    <div class="sp-title">日-地-月系统</div>
     <div class="sem-control">
       <label class="sem-label">速度</label>
-      <input type="range" id="sem-speed" min="0" max="5" step="0.1" value="1" class="sem-slider" />
-      <span id="sem-speed-val" class="sem-val">1×</span>
+      <span id="sem-speed-val" class="sem-val">1.0×</span>
+      <button class="chip" id="sem-pause">⏸ 暂停</button>
     </div>
+    <div class="sem-control">
+      <input type="range" id="sem-speed" min="0" max="5" step="0.1" value="1" class="sem-slider sem-slider-short" />
+    </div>
+  </div>
+  <div class="sp-section">
+    <div class="sp-title">观察模式</div>
+    <div class="sem-control">
+      <button class="chip" id="sem-view-orbit">🌏 公转</button>
+      <button class="chip" id="sem-view-rotate">🔄 自转</button>
+    </div>
+    <div class="sem-control">
+      <button class="chip" id="sem-focus-sun">☀️ 太阳中心</button>
+      <button class="chip" id="sem-focus-earth">🌍 地球中心</button>
+    </div>
+  </div>
+  <div class="sp-section">
+    <div class="sp-title">分至点位</div>
+    <div class="sem-control">
+      <button class="chip" id="sem-spring">🌱 北分点</button>
+      <button class="chip" id="sem-summer">☀️ 北至点</button>
+    </div>
+    <div class="sem-control">
+      <button class="chip" id="sem-autumn">🍂 南分点</button>
+      <button class="chip" id="sem-winter">❄️ 南至点</button>
+    </div>
+  </div>
+  <div class="sp-section">
+    <div class="sp-title">标注与轨道</div>
     <div class="sem-control">
       <button class="chip" id="sem-toggle-labels">🏷 标注</button>
       <button class="chip" id="sem-toggle-orbits">⭕ 轨道线</button>
     </div>
-    <div class="sem-control">
-      <button class="chip" id="sem-pause">⏸ 暂停</button>
-    </div>
   </div>
-  <div class="sp-section">
-    <div class="sp-title">科普信息</div>
-    <div class="sem-info">
-      <div class="sem-info-item">🌍 地球自转周期：约 24 小时</div>
-      <div class="sem-info-item">🌍 地球公转周期：约 365.25 天</div>
-      <div class="sem-info-item">🌙 月球公转周期：约 27.32 天</div>
-      <div class="sem-info-item">📐 地轴倾斜角：23.4°</div>
-      <div class="sem-info-item">📐 月球轨道倾角：5.14°</div>
-    </div>
-  </div>
-</div>
-
-<div id="layer-panel">
-  <button class="lp-btn" data-layer="crust"><span class="lp-dot" style="background:#8B4513"></span>地壳</button>
-  <button class="lp-btn" data-layer="mantle"><span class="lp-dot" style="background:#CC4400"></span>地幔</button>
-  <button class="lp-btn indent" data-layer="upper-mantle"><span class="lp-dot" style="background:#E65C00"></span>上地幔</button>
-  <button class="lp-btn indent2" data-layer="litho-mantle"><span class="lp-dot" style="background:#556B2F"></span>岩石圈地幔</button>
-  <button class="lp-btn indent2" data-layer="astheno"><span class="lp-dot" style="background:#CC4400"></span>软流圈</button>
-  <button class="lp-btn indent2" data-layer="transition"><span class="lp-dot" style="background:#E65C00"></span>过渡带</button>
-  <button class="lp-btn indent" data-layer="lower-mantle"><span class="lp-dot" style="background:#B22222"></span>下地幔</button>
-  <button class="lp-btn" data-layer="core"><span class="lp-dot" style="background:#FF8C00"></span>地核</button>
-  <button class="lp-btn indent" data-layer="outer-core"><span class="lp-dot" style="background:#FF8C00"></span>外核</button>
-  <button class="lp-btn indent" data-layer="inner-core"><span class="lp-dot" style="background:#FFD700"></span>内核</button>
-  <button class="lp-btn" data-layer="lithosphere"><span class="lp-dot" style="background:#556B2F"></span>岩石圈</button>
-  <button class="lp-reset" id="lp-reset">↻ 显示全部</button>
 </div>
 
 <script type="importmap">

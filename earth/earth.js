@@ -93,9 +93,10 @@ export function init({ scene, camera, renderer, TILT }) {
 
   /* Terrain toggle */
   let showBump = false;
-  document.getElementById('tb-terrain').addEventListener('click', () => {
+  const terrainBtn = document.getElementById('ep-terrain') || document.getElementById('tb-terrain');
+  if(terrainBtn) terrainBtn.addEventListener('click', () => {
     showBump = !showBump;
-    document.getElementById('tb-terrain').classList.toggle('active', showBump);
+    terrainBtn.classList.toggle('active', showBump);
     earthMat.uniforms.uBumpScale.value = showBump ? 0.018 : 0.0;
   });
 

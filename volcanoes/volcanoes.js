@@ -65,14 +65,6 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     });
     vGrid.appendChild(btn);
   });
-  const hideVBtn=document.createElement('div');hideVBtn.className='chip';hideVBtn.textContent='🚫 隐藏火山';
-  hideVBtn.addEventListener('click',e => {
-    e.stopPropagation();
-    volcanoGroup.visible=!volcanoGroup.visible;
-    hideVBtn.classList.toggle('active',!volcanoGroup.visible);
-    hideVBtn.textContent=volcanoGroup.visible?'🚫 隐藏火山':'👁 显示火山';
-  });
-  vGrid.appendChild(hideVBtn);
 
   /* Select / Deselect */
   let selectedVolcano = null;
@@ -213,7 +205,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     const barEl=document.getElementById('bottom-bar');
     const barRect=barEl.getBoundingClientRect();
     const overBar=e.clientY>=barRect.top;
-    const overPanel=document.querySelector('.side-panel.show')||document.querySelector('#layer-panel.show');
+    const overPanel=document.querySelector('.side-panel.show');
     const inPanel=overPanel&&e.clientX<=overPanel.getBoundingClientRect().right&&e.clientY>=overPanel.getBoundingClientRect().top&&e.clientY<=overPanel.getBoundingClientRect().bottom;
     if(deps.getSplitActive()||overBar||inPanel){tooltipEl.style.display='none';clusterEl.style.display='none';document.body.style.cursor='default';return;}
     mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;

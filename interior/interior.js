@@ -232,31 +232,25 @@ void main(){
 
   /* Interior mode toggle */
   let interiorMode = false;
-  const layerPanel = document.getElementById('layer-panel');
+  const layerPanel = document.getElementById('interior-sub');
 
   function toggleInterior(){
     interiorMode = !interiorMode;
     interiorGroup.visible = interiorMode;
     crossSectionGroup.visible = interiorMode;
-    document.getElementById('tb-interior').classList.toggle('active', interiorMode);
 
     if(interiorMode){
       deps.volcanoGroup.visible = false;
       deps.boundaryGroup.visible = false;
       deps.gridGroup.visible = false;
       deps.earthMat.uniforms.uClipInterior.value = 1.0;
-      layerPanel.classList.add('show');
       deps.setActivePanel('interior');
     } else {
-      deps.volcanoGroup.visible = true;
-      deps.boundaryGroup.visible = true;
-      deps.gridGroup.visible = true;
       deps.earthMat.uniforms.uClipInterior.value = 0.0;
-      layerPanel.classList.remove('show');
       activeLayer = null;
       deps.setActivePanel(null);
       csMat.uniforms.uFocusMode.value = 0.0;
-      layerPanel.querySelectorAll('.lp-btn').forEach(b=>b.classList.remove('active'));
+      if(layerPanel) layerPanel.querySelectorAll('.lp-btn').forEach(b=>b.classList.remove('active'));
       updateLabelVisibility(null);
       deps.hideKC();
     }
