@@ -3,7 +3,8 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 
-const BOUNDARY_R = 1.003;
+const BOUNDARY_R = 1.003; // 边界线离地球表面的高度（1=贴地表，越大越高）
+// 边界类型颜色：c=汇聚(红)、d=离散(绿)、t=转换(黄)、u=未分类(灰)
 const BCOLORS = {c:{main:0xff4444,glow:0xff4444},d:{main:0x44ff88,glow:0x44ff88},t:{main:0xffcc33,glow:0xffcc33},u:{main:0x888888,glow:0x888888}};
 const TYPE_LABELS = {c:'汇聚边界',d:'离散边界',t:'转换断层',u:'未分类'};
 const PLATE_NAMES = {AF:'非洲',AN:'南极洲',AP:'阿尔蒂普拉诺',AR:'阿拉伯',AS:'爱琴海',AT:'阿纳托利亚',AU:'澳大利亚',BH:'伯兹黑德',BR:'鸟头',BS:'班达海',BU:'缅甸',CA:'加勒比',CL:'卡罗琳',CO:'科科斯',CR:'哥斯达黎加',EA:'复活节岛',EU:'欧亚',FT:'汤加前弧',GP:'加拉帕戈斯',IN:'印度',JF:'胡安·德富卡',JZ:'胡安·费尔南德斯',KE:'克马德克',MA:'马里亚纳',MN:'马努斯',MO:'摩鹿加海',MS:'马库斯岛',NA:'北美',NB:'努比亚',ND:'北安第斯',NH:'新赫布里底',NI:'纽亚福阿',NZ:'纳兹卡',OK:'鄂霍茨克',ON:'冲绳',PA:'太平洋',PM:'巴拿马',PS:'菲律宾海',RI:'里维拉',SA:'南美',SB:'所罗门海',SC:'斯科舍',SL:'设得兰',SO:'索马里',SS:'南桑威奇',SU:'巽他',SW:'三明治',TI:'帝汶',TO:'汤加',WL:'伍德拉克',YA:'扬马延'};
@@ -48,12 +49,12 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
     coords.forEach(([lng,lat]) => { const v=lngLatToVec3(lng,lat,BOUNDARY_R); positions.push(v.x,v.y,v.z); });
 
     const gGeo=new LineGeometry();gGeo.setPositions(positions);
-    const gMat=new LineMaterial({color:col.glow,linewidth:4,transparent:true,opacity:0.18,resolution,depthWrite:false});
+    const gMat=new LineMaterial({color:col.glow,linewidth:4,transparent:true,opacity:0.18,resolution,depthWrite:false}); // 发光线：linewidth=粗细, opacity=透明度
     const gLine=new Line2(gGeo,gMat);gLine.computeLineDistances();
     boundaryGroup.add(gLine);allLineMats.push(gMat);
 
     const mGeo=new LineGeometry();mGeo.setPositions(positions);
-    const mMat=new LineMaterial({color:col.main,linewidth:1.8,transparent:true,opacity:0.9,resolution});
+    const mMat=new LineMaterial({color:col.main,linewidth:1.8,transparent:true,opacity:0.9,resolution}); // 主线：linewidth=粗细, opacity=透明度
     const mLine=new Line2(mGeo,mMat);mLine.computeLineDistances();
     const plateParts=plate.replace(/[\\\/]/g,'-').split('-');
     mLine.userData={plate,btype,plateParts,label:parsePlate(plate)+' · '+TYPE_LABELS[btype]};
@@ -69,8 +70,8 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
   function resetBoundaryColors(){
     deps.hideKC();
     bPairs.forEach(p => {
-      p.main.material.color.setHex(p.origColor);p.main.material.linewidth=1.8;p.main.material.opacity=0.9;
-      p.glow.material.color.setHex(p.origColor);p.glow.material.linewidth=4;p.glow.material.opacity=0.18;
+      p.main.material.color.setHex(p.origColor);p.main.material.linewidth=1.8;p.main.material.opacity=0.9; // 主线默认粗细和透明度
+      p.glow.material.color.setHex(p.origColor);p.glow.material.linewidth=4;p.glow.material.opacity=0.18; // 发光线默认粗细和透明度
     });
   }
 
@@ -89,8 +90,8 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
       highlightBtype=o.t;
       bGrid.querySelectorAll('.chip').forEach(b=>b.classList.toggle('active',b.dataset.btype===o.t));
       bPairs.forEach(p => {
-        if(p.btype===o.t){p.main.material.linewidth=2.8;p.main.material.opacity=1;p.glow.material.linewidth=7;p.glow.material.opacity=0.35;}
-        else{p.main.material.opacity=0.1;p.glow.material.opacity=0.02;}
+        if(p.btype===o.t){p.main.material.linewidth=2.8;p.main.material.opacity=1;p.glow.material.linewidth=7;p.glow.material.opacity=0.35;} // 选中边界类型的高亮粗细
+        else{p.main.material.opacity=0.1;p.glow.material.opacity=0.02;} // 非选中边界的淡化透明度
       });
       boundaryGroup.visible = true;
       const kc=KC_DATA_BOUNDARY['boundary-'+o.t];
@@ -119,9 +120,9 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
       btn.classList.add('active');
       bPairs.forEach(p => {
         if(p.plateParts.some(c=>pl.codes.includes(c))){
-          p.main.material.color.set(0x44ff88);p.main.material.linewidth=3.5;p.main.material.opacity=1;
-          p.glow.material.color.set(0x44ff88);p.glow.material.linewidth=8;p.glow.material.opacity=0.35;
-        } else {p.main.material.opacity=0.1;p.glow.material.opacity=0.02;}
+          p.main.material.color.set(0x44ff88);p.main.material.linewidth=3.5;p.main.material.opacity=1; // 选中板块边界高亮颜色(绿)和粗细
+          p.glow.material.color.set(0x44ff88);p.glow.material.linewidth=8;p.glow.material.opacity=0.35; // 选中板块边界发光线
+        } else {p.main.material.opacity=0.1;p.glow.material.opacity=0.02;} // 非选中板块的淡化透明度
       });
       boundaryGroup.visible = true;
       deps.navigateTo(pl.lng,pl.lat,null);

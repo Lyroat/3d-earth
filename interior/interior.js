@@ -3,6 +3,7 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 
+// 地球各层配置：name=中文名, rOuter/rInner=外/内归一化半径(1.0=地表), color=颜色, depth=深度, temp=温度, comp=成分, state=物态
 const LAYERS = [
   {name:'地壳',nameEn:'Crust',rOuter:1.0,rInner:0.995,color:0x8B4513,depth:'0~35 km',temp:'~400°C',comp:'硅铝质/硅镁质岩石',state:'固态'},
   {name:'岩石圈地幔',nameEn:'Lithospheric Mantle',rOuter:0.995,rInner:0.984,color:0x556B2F,depth:'35~100 km',temp:'400~600°C',comp:'橄榄岩（富铁镁矿物）',state:'固态'},
@@ -27,6 +28,7 @@ const KC_DATA_INTERIOR = {
   'inner-core':{title:'内核',desc:'<p>地球最中心的部分，为固态金属球体。</p><div class="kc-subtitle">关键特征</div><ul><li>半径：约 1216 千米</li><li>主要成分：铁、镍</li><li>温度极高，但因压力极大而保持固态</li><li>可能存在各向异性（地震波传播速度方向不同）</li></ul>'},
 };
 
+// 各层聚焦时的归一化半径范围（min~max），用于截面Shader高亮对应区域
 const LAYER_RANGES = {
   'crust':      {min:0.995, max:1.0},
   'lithosphere':{min:0.984, max:1.0},
@@ -46,6 +48,7 @@ export function init({ scene, resolution, allLineMats }, deps) {
   interiorGroup.visible = false;
   scene.add(interiorGroup);
 
+  // 截面Shader：顶点着色器传递位置，片元着色器用噪声函数(fbm/fbm6)生成地质纹理
   const csVS = `varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
   const csFS = `
 uniform float uFocusMin;
@@ -74,8 +77,9 @@ void main(){
   vec3 c;
   float n;
   float ang=atan(vPos.y,vPos.x);
-  if(r<0.957){
+  if(r<0.957){ // 过渡带以内：从内核到下地幔的颜色渐变
     float rr=r/0.957;
+    // g0~g5: 内核→外核的颜色渐变色阶（金白→金黄→橙→橙红→深红→深红棕）
     vec3 g0=vec3(1.0,1.0,0.92);
     vec3 g1=vec3(1.0,0.93,0.55);
     vec3 g2=vec3(1.0,0.60,0.15);
@@ -87,13 +91,13 @@ void main(){
     c=mix(c,g3,smoothstep(0.38,0.62,rr));
     c=mix(c,g4,smoothstep(0.58,0.82,rr));
     c=mix(c,g5,smoothstep(0.78,1.0,rr));
-    if(r<0.192){
+    if(r<0.192){ // 内核区域：中心发光效果，越靠近核心越亮
       float t=r/0.192;
       n=fbm(vPos.xy*6.0);
       float icGlow=1.0-smoothstep(0.3,1.0,t);
       c+=vec3(0.28,0.20,0.07)*icGlow;
       c+=vec3(0.04,0.02,0.01)*n*icGlow;
-    }else if(r<0.546){
+    }else if(r<0.546){ // 外核区域：液态铁镍的流动火焰纹理效果（多层fbm6叠加）
       float t=(r-0.192)/(0.546-0.192);
       float slow=uTime*0.15;
       float med=uTime*0.3;
@@ -147,11 +151,11 @@ void main(){
     base*=0.88+0.12*t;
     c=base;
   }
-  if(uFocusMode>0.5){
+  if(uFocusMode>0.5){ // 聚焦模式：非聚焦区域变灰变暗
     if(r<uFocusMin||r>uFocusMax){
       float gray=dot(c,vec3(0.299,0.587,0.114));
-      c=mix(c,vec3(gray),0.8);
-      c*=0.5;
+      c=mix(c,vec3(gray),0.8); // 灰度混合80%
+      c*=0.5; // 亮度降低到50%
     }
   }
   gl_FragColor=vec4(c,1.0);
@@ -168,7 +172,7 @@ void main(){
   scene.add(crossSectionGroup);
 
   function makeCSPlane(rotation){
-    const geo=new THREE.CircleGeometry(1.0,128);
+    const geo=new THREE.CircleGeometry(1.0,128); // 半径1.0的圆，128段细分保证边缘平滑
     const mesh=new THREE.Mesh(geo,csMat);
     mesh.rotation.set(...rotation);
     crossSectionGroup.add(mesh);
@@ -192,7 +196,7 @@ void main(){
     ctx.fillText(text,8,32);
     const tex=new THREE.CanvasTexture(cv);
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
-    sp.scale.set(0.55,0.08,1);
+    sp.scale.set(0.55,0.08,1); // 标签精灵尺寸：宽0.55 高0.08
     sp.position.copy(position);
     sp.userData=layerData;
     interiorGroup.add(sp);
@@ -203,14 +207,14 @@ void main(){
     const pts=[];
     points.forEach(p=>{pts.push(p.x,p.y,p.z+0.01);});
     const geo=new LineGeometry();geo.setPositions(pts);
-    const mat=new LineMaterial({color:0xffffff,linewidth:3,transparent:true,opacity:0.5,worldUnits:false,resolution});
+    const mat=new LineMaterial({color:0xffffff,linewidth:3,transparent:true,opacity:0.5,worldUnits:false,resolution}); // 引线：白色, 粗3px, 半透明50%
     const line=new Line2(geo,mat);line.computeLineDistances();
     interiorGroup.add(line);allLineMats.push(mat);
     leaderLines.push(line);
     return line;
   }
 
-  const LABEL_X = 1.45;
+  const LABEL_X = 1.45; // 标签X轴位置，越大离地球越远
   const labelCfg = [
     {aR:0.998, labelY:0.82}, {aR:0.990, labelY:0.66}, {aR:0.970, labelY:0.54},
     {aR:0.926, labelY:0.44}, {aR:0.720, labelY:0.34}, {aR:0.370, labelY:0.24},

@@ -17,6 +17,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   let viewMode = 'orbit';
   let focusTarget = 'sun';
 
+  /* 日地月尺寸配置：太阳半径2.0、地球轨道半径18、地球半径0.35、月球轨道半径1.2、月球半径0.095 */
   const SEM_SCALE = {
     sunR: 2.0, earthOrbitR: 18, earthR: 0.35, moonOrbitR: 1.2, moonR: 0.095,
   };
@@ -25,7 +26,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
 
   /* ======== Sun ======== */
   const sunGeo = new THREE.SphereGeometry(SEM_SCALE.sunR, 64, 64);
-  const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // 太阳颜色（白色，加载贴图后被覆盖）
   const sunMesh = new THREE.Mesh(sunGeo, sunMat);
   semGroup.add(sunMesh);
 
@@ -35,17 +36,17 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     sunMat.needsUpdate = true;
   });
 
-  const sunGlowGeo = new THREE.SphereGeometry(SEM_SCALE.sunR * 1.25, 32, 32);
+  const sunGlowGeo = new THREE.SphereGeometry(SEM_SCALE.sunR * 1.25, 32, 32); // 太阳辉光球体大小（太阳的1.25倍）
   const sunGlowMat = new THREE.ShaderMaterial({
     vertexShader: `varying vec3 vNorm;void main(){vNorm=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-    fragmentShader: `varying vec3 vNorm;void main(){float i=pow(0.65-dot(vNorm,vec3(0,0,1)),2.5);gl_FragColor=vec4(1.0,0.75,0.2,i*0.45);}`,
+    fragmentShader: `varying vec3 vNorm;void main(){float i=pow(0.65-dot(vNorm,vec3(0,0,1)),2.5);gl_FragColor=vec4(1.0,0.75,0.2,i*0.45);}`, // 辉光颜色（暖黄色），i*0.45 控制透明度
     transparent: true, side: THREE.BackSide, depthWrite: false
   });
   semGroup.add(new THREE.Mesh(sunGlowGeo, sunGlowMat));
 
-  const sunLight = new THREE.PointLight(0xfffbe8, 800, 0, 2);
+  const sunLight = new THREE.PointLight(0xfffbe8, 800, 0, 2); // 太阳光源：强度800，衰减指数2
   semGroup.add(sunLight);
-  semGroup.add(new THREE.AmbientLight(0x111122, 0.4));
+  semGroup.add(new THREE.AmbientLight(0x111122, 0.4)); // 环境光：暗蓝色，强度0.4
 
   /* ======== Earth ======== */
   const earthOrbitPivot = new THREE.Group();
@@ -56,7 +57,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   earthOrbitPivot.add(earthTiltGroup);
 
   const semEarthGeo = new THREE.SphereGeometry(SEM_SCALE.earthR, 48, 48);
-  const semEarthMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x000000, shininess: 15 });
+  const semEarthMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x000000, shininess: 15 }); // 地球表面光泽度15
   const semEarthMesh = new THREE.Mesh(semEarthGeo, semEarthMat);
   semEarthMesh.rotation.x = TILT;
   earthTiltGroup.add(semEarthMesh);
@@ -71,9 +72,9 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   const moonOrbitPivot = new THREE.Group();
   moonOrbitPivot.position.set(0, 0, 0);
   earthTiltGroup.add(moonOrbitPivot);
-  moonOrbitPivot.rotation.x = THREE.MathUtils.degToRad(5.14);
+  moonOrbitPivot.rotation.x = THREE.MathUtils.degToRad(5.14); // 月球轨道面相对黄道面的倾斜角5.14°
 
-  const semMoonMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x000000, shininess: 5 });
+  const semMoonMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x000000, shininess: 5 }); // 月球表面光泽度5
   const semMoonMesh = new THREE.Mesh(
     new THREE.SphereGeometry(SEM_SCALE.moonR, 32, 32),
     semMoonMat
@@ -97,17 +98,17 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
       pts.push(radius * Math.cos(a), 0, radius * Math.sin(a));
     }
     const geo = new LineGeometry(); geo.setPositions(pts);
-    const mat = new LineMaterial({ color, linewidth: 1.2, transparent: true, opacity: 0.35, resolution, depthWrite: false });
+    const mat = new LineMaterial({ color, linewidth: 1.2, transparent: true, opacity: 0.35, resolution, depthWrite: false }); // 轨道线：粗细1.2，透明度0.35
     const line = new Line2(geo, mat); line.computeLineDistances();
     parent.add(line); allLineMats.push(mat);
     return line;
   }
-  const earthOrbitLine = makeOrbitRing(SEM_SCALE.earthOrbitR, 0x4488cc, semGroup, 256);
-  const moonOrbitLine = makeOrbitRing(SEM_SCALE.moonOrbitR, 0x888888, moonOrbitPivot, 64);
+  const earthOrbitLine = makeOrbitRing(SEM_SCALE.earthOrbitR, 0x4488cc, semGroup, 256);   // 地球轨道线颜色：蓝色
+  const moonOrbitLine = makeOrbitRing(SEM_SCALE.moonOrbitR, 0x888888, moonOrbitPivot, 64); // 月球轨道线颜色：灰色
 
   /* ======== Earth axis ======== */
-  const axGeo = new THREE.CylinderGeometry(0.008, 0.008, SEM_SCALE.earthR * 2.8, 6);
-  const axMesh = new THREE.Mesh(axGeo, new THREE.MeshBasicMaterial({ color: 0xff6666, transparent: true, opacity: 0.6 }));
+  const axGeo = new THREE.CylinderGeometry(0.008, 0.008, SEM_SCALE.earthR * 2.8, 6); // 地轴线粗细0.008
+  const axMesh = new THREE.Mesh(axGeo, new THREE.MeshBasicMaterial({ color: 0xff6666, transparent: true, opacity: 0.6 })); // 地轴线：红色，透明度0.6
   axMesh.rotation.x = TILT;
   earthTiltGroup.add(axMesh);
 
@@ -134,22 +135,22 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     autumn: Math.PI,
     winter: 3 * Math.PI / 2
   };
-  const seasonNames = { spring: '北分点', summer: '南至点', autumn: '南分点', winter: '北至点' };
-  const seasonColors = { spring: '#44cc66', summer: '#66aaff', autumn: '#cc8844', winter: '#ffaa22' };
+  const seasonNames = { spring: '北分点', summer: '南至点', autumn: '南分点', winter: '北至点' }; // 分至点中文名
+  const seasonColors = { spring: '#44cc66', summer: '#66aaff', autumn: '#cc8844', winter: '#ffaa22' }; // 分至点标记颜色
 
   const seasonMarkers = {};
   Object.entries(seasonAngles).forEach(([key, angle]) => {
     const x = SEM_SCALE.earthOrbitR * Math.cos(angle);
     const z = SEM_SCALE.earthOrbitR * Math.sin(angle);
 
-    const dotGeo = new THREE.SphereGeometry(0.18, 12, 12);
+    const dotGeo = new THREE.SphereGeometry(0.18, 12, 12); // 分至点标记球体大小0.18
     const dotMat = new THREE.MeshBasicMaterial({ color: seasonColors[key] });
     const dot = new THREE.Mesh(dotGeo, dotMat);
     dot.position.set(x, 0, z);
     semGroup.add(dot);
 
-    const lbl = makeSEMLabel(seasonNames[key], seasonColors[key], 1.0);
-    lbl.position.set(x, 0.6, z);
+    const lbl = makeSEMLabel(seasonNames[key], seasonColors[key], 1.0); // 分至点标签大小1.0
+    lbl.position.set(x, 0.6, z); // 标签悬浮高度0.6
     semGroup.add(lbl);
 
     seasonMarkers[key] = { angle, dot, lbl };
@@ -269,20 +270,20 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     if (!semMode) return;
 
     if (viewMode === 'rotate') {
-      semEarthMesh.rotation.y += 0.01 * semSpeed;
+      semEarthMesh.rotation.y += 0.01 * semSpeed; // 自转模式：地球自转速度
     } else {
-      const earthAngularSpeed = 0.15 * semSpeed;
+      const earthAngularSpeed = 0.15 * semSpeed; // 公转模式：地球公转角速度
       const moonAngularSpeed = earthAngularSpeed * (365.25 / 27.32);
       semEarthYear += earthAngularSpeed * dt;
       semMoonMonth += moonAngularSpeed * dt;
       earthOrbitPivot.rotation.y = semEarthYear;
-      semEarthMesh.rotation.y += 0.02 * semSpeed;
+      semEarthMesh.rotation.y += 0.02 * semSpeed; // 公转模式：地球自转速度
       moonOrbitPivot.rotation.y = semMoonMonth;
     }
 
     earthTiltGroup.rotation.y = -earthOrbitPivot.rotation.y;
 
-    sunMesh.rotation.y += 0.002 * semSpeed;
+    sunMesh.rotation.y += 0.002 * semSpeed; // 太阳自转速度
 
     if (focusTarget === 'earth' && viewMode !== 'rotate') {
       const ep = getEarthWorldPos();

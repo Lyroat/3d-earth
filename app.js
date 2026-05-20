@@ -9,23 +9,23 @@ import { init as initSplit } from './plates/split.js';
 import { init as initVolcanoes } from './volcanoes/volcanoes.js';
 import { init as initInterior } from './interior/interior.js';
 
-/* ══════════ Scene ══════════ */
-const TILT = THREE.MathUtils.degToRad(23.4);
+/* ══════════ Scene — 场景、相机、渲染器初始化 ══════════ */
+const TILT = THREE.MathUtils.degToRad(23.4); // 地轴倾斜角度（度）
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
-camera.position.set(0, 0, 3);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000); // 45=视场角，越大视野越广
+camera.position.set(0, 0, 3); // 初始相机距离，值越大地球越小
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-controls.minDistance = 2.0;
-controls.maxDistance = 10;
-controls.rotateSpeed = 0.5;
-controls.zoomSpeed = 0.8;
+controls.enableDamping = true;  // 启用惯性阻尼
+controls.dampingFactor = 0.05;  // 阻尼系数，值越小惯性越大
+controls.minDistance = 2.0;  // 最小缩放距离（最近能拉多近）
+controls.maxDistance = 10;   // 最大缩放距离（最远能拉多远）
+controls.rotateSpeed = 0.5;  // 鼠标拖拽旋转速度
+controls.zoomSpeed = 0.8;    // 滚轮缩放速度
 
 const resolution = new THREE.Vector2(innerWidth, innerHeight);
 const allLineMats = [];
@@ -44,6 +44,7 @@ const kcDesc = document.getElementById('kc-desc');
 const kcImg = document.getElementById('kc-img');
 document.getElementById('kc-close').addEventListener('click', () => kcCard.classList.remove('show'));
 
+// 显示知识卡片弹窗
 function showKC(kc){
   kcTitle.textContent = kc.title;
   kcDesc.innerHTML = kc.desc || '';
@@ -57,6 +58,7 @@ const { earth, earthMat, gridGroup } = initEarth(ctx);
 const { magneticGroup } = initMagnetic(ctx);
 
 let magneticMode = false;
+// 切换磁场可视化模式（地球变半透明 + 显示磁力线）
 function toggleMagnetic(){
   magneticMode = !magneticMode;
   magneticGroup.visible = magneticMode;
@@ -66,7 +68,7 @@ function toggleMagnetic(){
     if(boundaryGroup) boundaryGroup.visible = false;
     if(volcanoGroup) volcanoGroup.visible = false;
     gridGroup.visible = false;
-    earthMat.uniforms.uOpacity.value = 0.35;
+    earthMat.uniforms.uOpacity.value = 0.35; // 磁场模式下地球透明度（0=全透明，1=不透明）
     earthMat.depthWrite = false;
   } else {
     earthMat.uniforms.uOpacity.value = 1.0;
@@ -94,6 +96,7 @@ function deactivateAllExplore(){
   EXPLORE_BTN_IDS.forEach(id => document.getElementById(id).classList.remove('active'));
 }
 
+// 重置地球到默认状态（关闭所有叠加层和子面板）
 function resetEarthState(){
   closeAllSubs();
   deactivateAllExplore();
@@ -103,7 +106,7 @@ function resetEarthState(){
   if(boundaryGroup) boundaryGroup.visible = false;
   if(volcanoGroup) volcanoGroup.visible = false;
   gridGroup.visible = false;
-  earthMat.uniforms.uBumpScale.value = 0.0;
+  earthMat.uniforms.uBumpScale.value = 0.0; // 地形凹凸强度（0=平滑，值越大地形越凸显）
   document.getElementById('ep-terrain').classList.remove('active');
   document.getElementById('ep-show-plates').classList.remove('active');
   document.getElementById('ep-show-volcano').classList.remove('active');
@@ -170,6 +173,7 @@ function clearAllSemKC(){
 /* Navigation */
 const pauseBtn = document.getElementById('pause-btn');
 
+// 相机飞行到指定经纬度位置
 function navigateTo(lng,lat,dist){
   autoRotate=false;manualPause=true;pauseBtn.textContent='▶';
   const sph=new THREE.Spherical().setFromVector3(camera.position);
@@ -180,6 +184,7 @@ function navigateTo(lng,lat,dist){
   navAnim={rotY:targetRotY,phi:targetPolar,r:dist,theta:null};
   controls.enabled=false;
 }
+// 聚焦查看某个火山位置
 function zoomToVolcano(vd){
   savedView={camPos:camera.position.clone(),earthRotY:earth.rotation.y};
   autoRotate=false;manualPause=true;pauseBtn.textContent='▶';
@@ -315,7 +320,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     autoMergeSplit();
     const btn = document.getElementById('ep-terrain');
     const active = btn.classList.toggle('active');
-    earthMat.uniforms.uBumpScale.value = active ? 0.018 : 0.0;
+    earthMat.uniforms.uBumpScale.value = active ? 0.018 : 0.0; // 0.018=地形凹凸高度
   });
 
   document.getElementById('ep-show-plates').addEventListener('click', () => {
@@ -496,6 +501,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
   });
 
   /* ══════════ Animate ══════════ */
+  // 同步所有叠加层的旋转角度与地球一致
   function syncRotY(){
     boundaryGroup.rotation.y = earth.rotation.y;
     volcano.volcanoGroup.rotation.y = earth.rotation.y;
@@ -504,6 +510,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     magneticGroup.rotation.y = earth.rotation.y;
   }
 
+  // 主渲染循环：每帧更新旋转、动画、渲染
   (function animate(){
     requestAnimationFrame(animate);
     const t = performance.now() * 0.001;
@@ -521,7 +528,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
       camera.position.setFromSpherical(sph);camera.lookAt(controls.target);
       if(done){navAnim=null;controls.enabled=true;controls.update();}
     } else {
-      if(autoRotate && !interior.interiorMode && currentMode==='earth'){earth.rotation.y+=0.001;syncRotY();}
+      if(autoRotate && !interior.interiorMode && currentMode==='earth'){earth.rotation.y+=0.001;syncRotY();} // 0.001=地球自转速度（弧度/帧）
       controls.update();
     }
 

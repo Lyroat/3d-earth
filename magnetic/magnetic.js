@@ -9,7 +9,7 @@ import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
    Using Schmidt semi-normalized convention (no Condon-Shortley phase
    in the Legendre functions; the IGRF data already absorbs it).
    ================================================================ */
-const LMAX = 6;
+const LMAX = 6; // 球谐展开最大阶数（越大越精确，计算量也越大）
 const _i = (l, m) => (l * (l + 1)) / 2 + m;
 const NC = _i(LMAX, LMAX) + 1;
 const G = new Float64Array(NC);
@@ -142,7 +142,7 @@ function evalBDir(x, y, z, sign) {
    RK-4 Field-line integrator
    Returns flat [x,y,z, …] array of positions.
    ================================================================ */
-const RMIN_STOP = 0.10;
+const RMIN_STOP = 0.10; // 磁感线追踪在地球内部的最小停止半径
 
 function traceFieldLine(x0, y0, z0, sign, ds, maxSteps, rMax) {
   const pts = [];
@@ -176,14 +176,14 @@ export function init({ scene, TILT, resolution, allLineMats }) {
   magneticGroup.rotation.x = TILT;
 
   /* ---- colour helpers: north=blue, south=red/orange, per-vertex blend ---- */
-  const colNorth = [0.22, 0.55, 1.0];
-  const colSouth = [1.0, 0.62, 0.12];
+  const colNorth = [0.22, 0.55, 1.0];  // 磁感线颜色：北极=蓝色
+  const colSouth = [1.0, 0.62, 0.12];  // 磁感线颜色：南极=橙红色
 
   function vertexColor(x, y, z) {
     const r = Math.sqrt(x*x + y*y + z*z);
     const lat = y / (r || 1);
     const tN = (lat + 1) * 0.5;
-    const dim = 0.55 + 0.45 * Math.exp(-0.12 * (r - 1));
+    const dim = 0.55 + 0.45 * Math.exp(-0.12 * (r - 1)); // 磁感线远离地球时变暗的衰减系数
     return [
       (colNorth[0]*tN + colSouth[0]*(1-tN)) * dim,
       (colNorth[1]*tN + colSouth[1]*(1-tN)) * dim,
@@ -191,7 +191,7 @@ export function init({ scene, TILT, resolution, allLineMats }) {
     ];
   }
 
-  /* ---- seed configurations ---- */
+  /* ---- 磁感线播种配置：colat=余纬度(°)、nAz=方位角数量(条数)、w=线宽、op=透明度 ---- */
   const seeds = [
     { colat: 78, nAz: 16, w: 3.5,  op: 0.55 },
     { colat: 72, nAz: 16, w: 3.25, op: 0.48 },
@@ -216,6 +216,7 @@ export function init({ scene, TILT, resolution, allLineMats }) {
       const { Br } = computeB(r0, theta, phi);
       const sign = Br >= 0 ? 1 : -1;
 
+      // ds=0.004 RK4积分步长（越小越精确但越慢）; maxSteps=10000 最大追踪步数; rMax=12 磁感线最大延伸半径
       const ptsOut = traceFieldLine(sx, sy, sz, sign, 0.004, 10000, 12);
       const ptsIn  = traceFieldLine(sx, sy, sz, -sign, 0.004, 10000, 12);
 
@@ -259,8 +260,8 @@ export function init({ scene, TILT, resolution, allLineMats }) {
   const msPh = mnPh + Math.PI;
 
   /* ---- pole markers ---- */
-  const pGeo  = new THREE.SphereGeometry(0.04, 16, 16);
-  const glGeo = new THREE.SphereGeometry(0.09, 16, 16);
+  const pGeo  = new THREE.SphereGeometry(0.04, 16, 16); // 磁极标记球体大小
+  const glGeo = new THREE.SphereGeometry(0.09, 16, 16); // 磁极发光球体大小
 
   function addPole(th, ph, color) {
     const [px, py, pz] = sph2xyz(1.04, th, ph);
@@ -271,8 +272,8 @@ export function init({ scene, TILT, resolution, allLineMats }) {
     gl.position.set(px, py, pz);
     magneticGroup.add(gl);
   }
-  addPole(mnTh, mnPh, 0x3366ff);
-  addPole(msTh, msPh, 0xff3333);
+  addPole(mnTh, mnPh, 0x3366ff); // 地磁北极标记颜色（蓝）
+  addPole(msTh, msPh, 0xff3333); // 地磁南极标记颜色（红）
 
   /* ---- pole labels ---- */
   function makeLabel(text, cssColor, w, h, fs) {
@@ -287,12 +288,12 @@ export function init({ scene, TILT, resolution, allLineMats }) {
   }
 
   const [nlx,nly,nlz] = sph2xyz(1.32, mnTh, mnPh);
-  const nLbl = makeLabel('地磁北极','#4488ff', 320, 80, 44);
+  const nLbl = makeLabel('地磁北极','#4488ff', 320, 80, 44); // 磁极标签：蓝色，320×80画布，44px字号
   nLbl.scale.set(0.8, 0.2, 1); nLbl.position.set(nlx, nly, nlz);
   magneticGroup.add(nLbl);
 
   const [slx,sly,slz] = sph2xyz(1.32, msTh, msPh);
-  const sLbl = makeLabel('地磁南极','#ff4444', 320, 80, 44);
+  const sLbl = makeLabel('地磁南极','#ff4444', 320, 80, 44); // 磁极标签：红色，320×80画布，44px字号
   sLbl.scale.set(0.8, 0.2, 1); sLbl.position.set(slx, sly, slz);
   magneticGroup.add(sLbl);
 
@@ -305,12 +306,12 @@ export function init({ scene, TILT, resolution, allLineMats }) {
     new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12 })));
 
   /* ---- internal bar magnet ---- */
-  const barLen = 0.825, barRad = 0.07;
+  const barLen = 0.825, barRad = 0.07; // 内部条形磁铁长度和半径
   const halfGeo = new THREE.CylinderGeometry(barRad, barRad, barLen / 2, 16);
 
-  const nHalf = new THREE.Mesh(halfGeo, new THREE.MeshBasicMaterial({ color: 0xff2222 }));
+  const nHalf = new THREE.Mesh(halfGeo, new THREE.MeshBasicMaterial({ color: 0xff2222 })); // 磁铁N极颜色（红）
   nHalf.position.y = barLen / 4;
-  const sHalf = new THREE.Mesh(halfGeo, new THREE.MeshBasicMaterial({ color: 0x2266ff }));
+  const sHalf = new THREE.Mesh(halfGeo, new THREE.MeshBasicMaterial({ color: 0x2266ff })); // 磁铁S极颜色（蓝）
   sHalf.position.y = -barLen / 4;
 
   const capGeo = new THREE.CircleGeometry(barRad, 16);

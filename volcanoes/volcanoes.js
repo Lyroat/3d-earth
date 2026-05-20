@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
-const VOLCANO_R = 1.025;
-const CLUSTER_PX = 28;
-const VCOLORS = {a:'#DC143C',d:'#FFA500',e:'#B0C4DE',u:'#555555'};
+const VOLCANO_R = 1.025; // 火山标记离地表高度（1=贴地表，越大越高）
+const CLUSTER_PX = 28; // 火山聚合判定像素半径（屏幕距离内的火山会合并为一组）
+const VCOLORS = {a:'#DC143C',d:'#FFA500',e:'#B0C4DE',u:'#555555'}; // 火山类型颜色：a=活火山(深红)、d=休眠(橙)、e=死火山(银灰)
 const STATUS_CN = {a:'活火山',d:'休眠火山',e:'死火山',u:'未知'};
 const STATUS_EN = {a:'Active Volcano',d:'Dormant Volcano',e:'Extinct Volcano',u:'Unknown'};
 
@@ -17,12 +17,12 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     const cv=document.createElement('canvas');cv.width=128;cv.height=128;
     const x=cv.getContext('2d'),cx=64,cy=64;
     const g=x.createRadialGradient(cx,cy,0,cx,cy,56);
-    g.addColorStop(0,color);g.addColorStop(0.35,color+'aa');g.addColorStop(1,color+'00');
+    g.addColorStop(0,color);g.addColorStop(0.35,color+'aa');g.addColorStop(1,color+'00'); // 火山标记径向渐变（中心亮，外围淡出）
     x.fillStyle=g;x.beginPath();x.arc(cx,cy,56,0,Math.PI*2);x.fill();
-    x.fillStyle='#fff';x.beginPath();x.arc(cx,cy,8,0,Math.PI*2);x.fill();
+    x.fillStyle='#fff';x.beginPath();x.arc(cx,cy,8,0,Math.PI*2);x.fill(); // 火山中心白色圆点大小（8像素）
     const t=new THREE.CanvasTexture(cv);
     const m=new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false,sizeAttenuation:true});
-    const s=new THREE.Sprite(m);s.scale.set(0.08,0.08,1);return s;
+    const s=new THREE.Sprite(m);s.scale.set(0.08,0.08,1);return s; // 火山标记在3D空间中的大小
   }
 
   const volcanoGroup = new THREE.Group();
@@ -149,7 +149,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
   }
 
   function tipHTML(d){
-    const dc=VCOLORS[d.sc]||VCOLORS.u;
+    const dc=VCOLORS[d.sc]||VCOLORS.u; // tooltip中活跃度文字颜色（取火山状态对应色）
     const nameLine = d.nameCn&&d.nameCn!==d.name
       ? `<div class="tip-name-cn">${d.nameCn}</div><div class="tip-name-en">${d.name}</div>`
       : `<div class="tip-name-cn">${d.name}</div>`;
@@ -217,7 +217,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
       const vHits=raycaster.intersectObjects(vis).filter(h=>h.distance<eDist+0.01&&isVisible(h.object));
       if(vHits.length>0){
         const mx=e.clientX,my=e.clientY;
-        const nearby=[];vis.forEach(sp=>{const p=screenPos(sp);if(p.z>1)return;const dx=p.x-mx,dy=p.y-my;if(Math.sqrt(dx*dx+dy*dy)<CLUSTER_PX)nearby.push(sp);});
+        const nearby=[];vis.forEach(sp=>{const p=screenPos(sp);if(p.z>1)return;const dx=p.x-mx,dy=p.y-my;if(Math.sqrt(dx*dx+dy*dy)<CLUSTER_PX)nearby.push(sp);}); // 聚合检测：屏幕像素距离<CLUSTER_PX的火山归为一组
         if(nearby.length>1){tooltipEl.style.display='none';buildCluster(nearby,mx,my);document.body.style.cursor='pointer';return;}
         clusterEl.style.display='none';tooltipEl.innerHTML=tipHTML(vHits[0].object.userData);posEl(tooltipEl,mx,my);document.body.style.cursor='pointer';return;
       }
@@ -265,7 +265,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
 
   /* Pulse update (called from animate) */
   function updatePulse(t){
-    volcanoSprites.forEach((sp,i)=>{if(sp.visible) sp.material.opacity=0.72+0.28*Math.sin(t*2.5+i*0.6);});
+    volcanoSprites.forEach((sp,i)=>{if(sp.visible) sp.material.opacity=0.72+0.28*Math.sin(t*2.5+i*0.6);}); // 火山闪烁动画：基础亮度0.72，闪烁幅度0.28，频率2.5，相位偏移0.6
   }
 
   return {

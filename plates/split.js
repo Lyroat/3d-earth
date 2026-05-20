@@ -3,7 +3,7 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 
-const BOUNDARY_R = 1.003;
+const BOUNDARY_R = 1.003; // 边界线离地球表面的高度（1=贴地表，越大越高）
 
 export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 }, deps) {
   const splitParent = new THREE.Group();
@@ -40,19 +40,19 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
           if(seg.length < 2) return;
           const pts=[];seg.forEach(([lng,lat])=>{const v=lngLatToVec3(lng,lat,BOUNDARY_R);pts.push(v.x,v.y,v.z);});
           const g=new LineGeometry();g.setPositions(pts);
-          const m=new LineMaterial({color:color.getHex(),linewidth:2.5,transparent:true,opacity:0.85,resolution});
+          const m=new LineMaterial({color:color.getHex(),linewidth:2.5,transparent:true,opacity:0.85,resolution}); // 拆分板块轮廓主线：linewidth=粗细, opacity=透明度
           const l=new Line2(g,m);l.computeLineDistances();group.add(l);allLineMats.push(m);
-          const gm=new LineMaterial({color:color.getHex(),linewidth:6,transparent:true,opacity:0.2,resolution,depthWrite:false});
+          const gm=new LineMaterial({color:color.getHex(),linewidth:6,transparent:true,opacity:0.2,resolution,depthWrite:false}); // 拆分板块轮廓发光线：linewidth=粗细, opacity=透明度
           const gg=new LineGeometry();gg.setPositions(pts);
           const gl2=new Line2(gg,gm);gl2.computeLineDistances();group.add(gl2);allLineMats.push(gm);
         });
       }
       const label=makeTextSprite(name,info.color);
       const cPos=lngLatToVec3(info.cx,info.cy,BOUNDARY_R+0.05);
-      label.position.copy(cPos);label.scale.set(0.4,0.1,1);
+      label.position.copy(cPos);label.scale.set(0.4,0.1,1); // 板块名称标签大小（宽, 高, 深）
       group.add(label);
       const dir=lngLatToVec3(info.cx,info.cy,1).normalize();
-      group.userData={targetOffset:dir.clone().multiplyScalar(1.2)};
+      group.userData={targetOffset:dir.clone().multiplyScalar(1.2)}; // 板块拆分展开距离（越大拆分后越远）
       splitParent.add(group);splitGroups[name]=group;
     }
   }
@@ -91,13 +91,13 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
 
   function updateSplit(earthMat, boundaryGroup){
     if(splitDir === 0) return;
-    splitProgress += splitDir * 0.018;
+    splitProgress += splitDir * 0.018; // 拆分/合并动画速度（越大越快）
     splitProgress = Math.max(0, Math.min(1, splitProgress));
-    const ease = splitProgress * splitProgress * (3 - 2 * splitProgress);
+    const ease = splitProgress * splitProgress * (3 - 2 * splitProgress); // smoothstep 缓动曲线
     for(const g of Object.values(splitGroups)){
       g.position.copy(g.userData.targetOffset.clone().multiplyScalar(ease));
     }
-    earthMat.uniforms.uOpacity.value = 1 - ease * 0.6;
+    earthMat.uniforms.uOpacity.value = 1 - ease * 0.6; // 拆分时地球透明度（1=不透明，最透时0.4）
     if(splitDir === 1) boundaryGroup.visible = ease < 0.5;
     if(splitProgress <= 0 && splitDir === -1){
       splitDir = 0; splitParent.visible = false;
