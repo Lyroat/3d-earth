@@ -4,6 +4,8 @@ const ALLOWED_HOSTS = [
   'localhost',
   '127.0.0.1',
   'earth-volcano-3d.vercel.app',
+  '3d-earth.xyz',
+  'www.3d-earth.xyz',
   // ↑ 在此添加其他授权域名
 ];
 
