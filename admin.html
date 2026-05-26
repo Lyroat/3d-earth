@@ -34,6 +34,10 @@ h1{font-size:20px;font-weight:600;margin-bottom:20px;color:rgba(255,255,255,.9)}
 .tabs{display:flex;gap:8px;margin-bottom:16px}
 .tab{padding:6px 16px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;font-family:inherit}
 .tab.active{background:rgba(77,195,247,.2);border-color:rgba(77,195,247,.4);color:#fff}
+.search-bar{display:none;margin-bottom:16px}
+.search-bar input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:13px;padding:8px 14px;width:100%;max-width:400px;outline:none;font-family:inherit}
+.search-bar input:focus{border-color:rgba(77,195,247,.5)}
+.search-bar input::placeholder{color:rgba(255,255,255,.3)}
 </style>
 </head>
 <body>
@@ -52,6 +56,9 @@ h1{font-size:20px;font-weight:600;margin-bottom:20px;color:rgba(255,255,255,.9)}
     <button class="tab" data-status="approved">已通过</button>
     <button class="tab" data-status="rejected">已拒绝</button>
   </div>
+  <div class="search-bar" id="search-bar">
+    <input type="text" id="photo-search" placeholder="搜索火山名称…" autocomplete="off" />
+  </div>
   <div id="photo-grid" class="grid"></div>
   <div id="status-msg" class="status-msg" style="display:none"></div>
 </div>
@@ -60,6 +67,7 @@ h1{font-size:20px;font-weight:600;margin-bottom:20px;color:rgba(255,255,255,.9)}
 const SUPABASE_URL = 'https://kbighainzawljrmtxolw.supabase.co';
 let adminKey = '';
 let currentTab = 'pending';
+let cachedPhotos = [];
 
 document.getElementById('login-btn').addEventListener('click', tryLogin);
 document.getElementById('admin-pwd').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
@@ -85,32 +93,46 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     currentTab = tab.dataset.status;
+    document.getElementById('photo-search').value = '';
     loadPhotos(currentTab);
   });
 });
 
+document.getElementById('photo-search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  renderPhotos(cachedPhotos.filter(p => !q || p.volcano_id.toLowerCase().includes(q)), currentTab);
+});
+
+function renderPhotos(data, status) {
+  const grid = document.getElementById('photo-grid');
+  if (!data.length) { grid.innerHTML = '<div class="empty">暂无照片</div>'; return; }
+  grid.innerHTML = data.map(p => `
+    <div class="card" data-id="${p.id}">
+      <img src="${SUPABASE_URL}/storage/v1/object/public/volcano-photos/${p.image_path}" />
+      <div class="card-body">
+        <div class="card-volcano">${p.volcano_id} ${p.is_featured ? '<span class="featured-badge">⭐ 封面</span>' : ''}</div>
+        <div class="card-meta">上传者: ${p.uploader_id} · ${new Date(p.created_at).toLocaleString('zh-CN')}</div>
+        ${status === 'pending' ? `<div class="card-actions">
+          <button class="btn-approve" onclick="reviewPhoto('${p.id}','approved')">通过</button>
+          <button class="btn-reject" onclick="reviewPhoto('${p.id}','rejected')">拒绝</button>
+        </div>` : ''}
+        ${status === 'approved' ? `<div class="card-actions">
+          <button class="btn-feature${p.is_featured ? ' active' : ''}" onclick="setFeatured('${p.id}','${p.volcano_id}')">${p.is_featured ? '✓ 已设为封面' : '⭐ 设为封面'}</button>
+        </div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
 async function loadPhotos(status) {
   const grid = document.getElementById('photo-grid');
+  const searchBar = document.getElementById('search-bar');
+  searchBar.style.display = (status === 'approved') ? 'block' : 'none';
   grid.innerHTML = '<div class="empty">加载中…</div>';
   try {
     const res = await fetch(`/api/admin/pending?status=${status}`, { headers: { 'x-admin-key': adminKey } });
     const data = await res.json();
-    if (!data.length) { grid.innerHTML = '<div class="empty">暂无照片</div>'; return; }
-    grid.innerHTML = data.map(p => `
-      <div class="card" data-id="${p.id}">
-        <img src="${SUPABASE_URL}/storage/v1/object/public/volcano-photos/${p.image_path}" />
-        <div class="card-body">
-          <div class="card-volcano">${p.volcano_id} ${p.is_featured ? '<span class="featured-badge">⭐ 封面</span>' : ''}</div>
-          <div class="card-meta">上传者: ${p.uploader_id} · ${new Date(p.created_at).toLocaleString('zh-CN')}</div>
-          ${status === 'pending' ? `<div class="card-actions">
-            <button class="btn-approve" onclick="reviewPhoto('${p.id}','approved')">通过</button>
-            <button class="btn-reject" onclick="reviewPhoto('${p.id}','rejected')">拒绝</button>
-          </div>` : ''}
-          ${status === 'approved' ? `<div class="card-actions">
-            <button class="btn-feature${p.is_featured ? ' active' : ''}" onclick="setFeatured('${p.id}','${p.volcano_id}')">${p.is_featured ? '✓ 已设为封面' : '⭐ 设为封面'}</button>
-          </div>` : ''}
-        </div>
-      </div>`).join('');
+    cachedPhotos = data;
+    renderPhotos(data, status);
   } catch (e) {
     grid.innerHTML = `<div class="empty">加载失败: ${e.message}</div>`;
   }
