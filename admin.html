@@ -43,14 +43,14 @@ h1{font-size:20px;font-weight:600;margin-bottom:20px;color:rgba(255,255,255,.9)}
 .tabs{display:flex;gap:8px;margin-bottom:16px}
 .tab{padding:6px 16px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;font-family:inherit}
 .tab.active{background:rgba(77,195,247,.2);border-color:rgba(77,195,247,.4);color:#fff}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden}
 .card img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
-.card-body{padding:12px;display:flex;flex-direction:column;gap:6px}
-.card-volcano{font-size:14px;font-weight:600}
-.card-meta{font-size:11px;color:rgba(255,255,255,.4)}
-.card-actions{display:flex;gap:8px;margin-top:4px}
-.btn-approve,.btn-reject,.btn-feature{flex:1;padding:8px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.card-body{padding:8px;display:flex;flex-direction:column;gap:4px}
+.card-volcano{font-size:11px;font-weight:600}
+.card-meta{font-size:9px;color:rgba(255,255,255,.4)}
+.card-actions{display:flex;gap:4px;margin-top:2px}
+.btn-approve,.btn-reject,.btn-feature,.btn-delete{flex:1;padding:5px;border:none;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
 .btn-approve{background:rgba(76,175,80,.2);color:#66bb6a}
 .btn-approve:hover{background:rgba(76,175,80,.4)}
 .btn-reject{background:rgba(244,67,54,.15);color:#ef5350}
@@ -58,7 +58,9 @@ h1{font-size:20px;font-weight:600;margin-bottom:20px;color:rgba(255,255,255,.9)}
 .btn-feature{background:rgba(255,200,50,.15);color:#ffc107}
 .btn-feature:hover{background:rgba(255,200,50,.35)}
 .btn-feature.active{background:rgba(255,200,50,.35);color:#fff}
-.featured-badge{display:inline-block;background:rgba(255,200,50,.2);color:#ffc107;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
+.btn-delete{background:rgba(150,150,150,.15);color:rgba(255,255,255,.5)}
+.btn-delete:hover{background:rgba(244,67,54,.25);color:#ef5350}
+.featured-badge{display:inline-block;background:rgba(255,200,50,.2);color:#ffc107;font-size:9px;padding:1px 6px;border-radius:4px;font-weight:600}
 .empty{text-align:center;color:rgba(255,255,255,.3);padding:60px 0;font-size:14px}
 .status-msg{text-align:center;color:rgba(255,200,100,.8);padding:12px;font-size:13px}
 .breadcrumb{font-size:12px;color:rgba(255,255,255,.4)}
@@ -209,7 +211,11 @@ function renderPhotos(data, status) {
           <button class="btn-reject" onclick="reviewPhoto('${p.id}','rejected')">拒绝</button>
         </div>` : ''}
         ${status === 'approved' ? `<div class="card-actions">
-          <button class="btn-feature${p.is_featured ? ' active' : ''}" onclick="setFeatured('${p.id}','${p.volcano_id}')">${p.is_featured ? '✓ 已设为封面' : '⭐ 设为封面'}</button>
+          <button class="btn-feature${p.is_featured ? ' active' : ''}" onclick="setFeatured('${p.id}','${p.volcano_id}')">${p.is_featured ? '✓ 封面' : '⭐ 封面'}</button>
+          <button class="btn-delete" onclick="deletePhoto('${p.id}','${p.image_path}')">🗑 删除</button>
+        </div>` : ''}
+        ${status === 'rejected' ? `<div class="card-actions">
+          <button class="btn-delete" onclick="deletePhoto('${p.id}','${p.image_path}')">🗑 删除</button>
         </div>` : ''}
       </div>
     </div>`).join('');
@@ -238,6 +244,21 @@ window.setFeatured = async function(id, volcanoId) {
     });
     if (!res.ok) throw new Error('操作失败');
     loadPhotos('approved');
+  } catch (e) {
+    alert(e.message);
+  }
+};
+
+window.deletePhoto = async function(id, imagePath) {
+  if (!confirm('确定要删除这张照片吗？此操作不可恢复。')) return;
+  try {
+    const res = await fetch('/api/admin/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ id, image_path: imagePath }),
+    });
+    if (!res.ok) throw new Error('删除失败');
+    loadPhotos(currentTab);
   } catch (e) {
     alert(e.message);
   }
