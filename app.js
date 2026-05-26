@@ -454,6 +454,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     }
     autoMergeSplit();
     resetEarthState();
+    volcano.deselectVolcano();
     document.getElementById('earth-panel').classList.remove('show');
     document.getElementById('tb-earth').classList.remove('active');
     earth.visible = true;
