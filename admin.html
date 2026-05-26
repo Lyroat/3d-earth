@@ -20,11 +20,15 @@ h1{font-size:20px;font-weight:600;margin-bottom:20px;color:rgba(255,255,255,.9)}
 .card-volcano{font-size:14px;font-weight:600}
 .card-meta{font-size:11px;color:rgba(255,255,255,.4)}
 .card-actions{display:flex;gap:8px;margin-top:4px}
-.btn-approve,.btn-reject{flex:1;padding:8px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-approve,.btn-reject,.btn-feature{flex:1;padding:8px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
 .btn-approve{background:rgba(76,175,80,.2);color:#66bb6a}
 .btn-approve:hover{background:rgba(76,175,80,.4)}
 .btn-reject{background:rgba(244,67,54,.15);color:#ef5350}
 .btn-reject:hover{background:rgba(244,67,54,.35)}
+.btn-feature{background:rgba(255,200,50,.15);color:#ffc107}
+.btn-feature:hover{background:rgba(255,200,50,.35)}
+.btn-feature.active{background:rgba(255,200,50,.35);color:#fff}
+.featured-badge{display:inline-block;background:rgba(255,200,50,.2);color:#ffc107;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
 .empty{text-align:center;color:rgba(255,255,255,.3);padding:60px 0;font-size:14px}
 .status-msg{text-align:center;color:rgba(255,200,100,.8);padding:12px;font-size:13px}
 .tabs{display:flex;gap:8px;margin-bottom:16px}
@@ -96,11 +100,14 @@ async function loadPhotos(status) {
       <div class="card" data-id="${p.id}">
         <img src="${SUPABASE_URL}/storage/v1/object/public/volcano-photos/${p.image_path}" />
         <div class="card-body">
-          <div class="card-volcano">${p.volcano_id}</div>
+          <div class="card-volcano">${p.volcano_id} ${p.is_featured ? '<span class="featured-badge">⭐ 封面</span>' : ''}</div>
           <div class="card-meta">上传者: ${p.uploader_id} · ${new Date(p.created_at).toLocaleString('zh-CN')}</div>
           ${status === 'pending' ? `<div class="card-actions">
             <button class="btn-approve" onclick="reviewPhoto('${p.id}','approved')">通过</button>
             <button class="btn-reject" onclick="reviewPhoto('${p.id}','rejected')">拒绝</button>
+          </div>` : ''}
+          ${status === 'approved' ? `<div class="card-actions">
+            <button class="btn-feature${p.is_featured ? ' active' : ''}" onclick="setFeatured('${p.id}','${p.volcano_id}')">${p.is_featured ? '✓ 已设为封面' : '⭐ 设为封面'}</button>
           </div>` : ''}
         </div>
       </div>`).join('');
@@ -108,6 +115,20 @@ async function loadPhotos(status) {
     grid.innerHTML = `<div class="empty">加载失败: ${e.message}</div>`;
   }
 }
+
+window.setFeatured = async function(id, volcanoId) {
+  try {
+    const res = await fetch('/api/admin/feature', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ id, volcano_id: volcanoId }),
+    });
+    if (!res.ok) throw new Error('操作失败');
+    loadPhotos('approved');
+  } catch (e) {
+    alert(e.message);
+  }
+};
 
 window.reviewPhoto = async function(id, status) {
   const card = document.querySelector(`.card[data-id="${id}"]`);

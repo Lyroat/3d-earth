@@ -11,7 +11,7 @@ const photoCache = new Map();
 export async function loadApprovedPhotos() {
   const { data } = await supabase
     .from('photos')
-    .select('volcano_id, image_path, uploader_id')
+    .select('volcano_id, image_path, uploader_id, is_featured')
     .eq('status', 'approved')
     .order('created_at', { ascending: false });
 
@@ -20,6 +20,10 @@ export async function loadApprovedPhotos() {
   data.forEach(p => {
     if (!photoCache.has(p.volcano_id)) photoCache.set(p.volcano_id, []);
     photoCache.get(p.volcano_id).push(p);
+  });
+  // 封面照片排到最前
+  photoCache.forEach((photos) => {
+    photos.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
   });
 }
 
