@@ -543,6 +543,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
 
     split.updateSplit(earthMat, boundaryGroup);
     volcano.updatePulse(t);
+    volcano.updatePinned();
     interior.updateTime(t);
     semMod.updateSEM(0.016);
     earthMat.uniforms.uCam.value.copy(camera.position);

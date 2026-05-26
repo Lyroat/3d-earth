@@ -69,7 +69,10 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
 
   /* Select / Deselect */
   const uploadTrigger = document.getElementById('upload-trigger');
+  const lightboxEl = document.getElementById('photo-lightbox');
+  const lightboxImg = document.getElementById('lightbox-img');
   let selectedVolcano = null;
+  let pinnedSprite = null;
   function selectVolcano(sp){
     selectedVolcano = sp;
     volcanoSprites.forEach(s=>{if(s!==sp) s.visible=false;});
@@ -78,9 +81,40 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     uploadTrigger.dataset.volcanoId = sp.userData.name;
     uploadTrigger.dataset.volcanoName = sp.userData.nameCn || sp.userData.name;
   }
+  function pinTooltip(sp){
+    pinnedSprite = sp;
+    const d = sp.userData;
+    const photos = getPhotosForVolcano(d.name);
+    tooltipEl.innerHTML = tipHTML(d);
+    tooltipEl.style.whiteSpace = photos.length > 0 ? 'normal' : 'nowrap';
+    tooltipEl.style.maxWidth = photos.length > 0 ? '280px' : '';
+    tooltipEl.classList.add('pinned');
+    tooltipEl.style.display = 'block';
+    const photoImg = tooltipEl.querySelector('.tip-photo img');
+    if (photoImg) {
+      photoImg.addEventListener('click', () => {
+        lightboxImg.src = photoImg.src;
+        lightboxEl.classList.add('show');
+      });
+    }
+  }
+  function unpinTooltip(){
+    pinnedSprite = null;
+    tooltipEl.classList.remove('pinned');
+    tooltipEl.style.display = 'none';
+  }
+  function updatePinned(){
+    if (!pinnedSprite) return;
+    const p = screenPos(pinnedSprite);
+    if (p.z > 1) { tooltipEl.style.display = 'none'; return; }
+    tooltipEl.style.display = 'block';
+    posEl(tooltipEl, p.x, p.y);
+  }
+
   function deselectVolcano(){
     if(!selectedVolcano) return;
     selectedVolcano = null;
+    unpinTooltip();
     volcanoSprites.forEach(sp=>{
       sp.visible = activeVFilter ? (sp.userData.sc===activeVFilter) : true;
     });
@@ -110,7 +144,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
         el.addEventListener('click',()=>{
           const sp=matches[i];if(!sp)return;
           searchResults.style.display='none';searchInput.value='';
-          selectVolcano(sp);deps.zoomToVolcano(sp.userData);
+          selectVolcano(sp);pinTooltip(sp);deps.zoomToVolcano(sp.userData);
         });
       });
     },150);
@@ -205,13 +239,13 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
       item.addEventListener('click',()=>{
         const sp=clusterSprites[parseInt(item.dataset.idx)];if(!sp)return;
         clusterEl.style.display='none';clusterHovered=false;
-        selectVolcano(sp);deps.zoomToVolcano(sp.userData);
+        selectVolcano(sp);pinTooltip(sp);deps.zoomToVolcano(sp.userData);
       });
     });
   }
 
   function handlePointerMove(e){
-    if(clusterHovered) return;
+    if(clusterHovered || pinnedSprite) return;
     const barEl=document.getElementById('bottom-bar');
     const barRect=barEl.getBoundingClientRect();
     const overBar=e.clientY>=barRect.top;
@@ -263,7 +297,10 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     const vis=volcanoSprites.filter(s=>s.visible&&isVisible(s));
     const hits=rc.intersectObjects(vis).filter(h=>h.distance<eDist2+0.01&&isVisible(h.object));
     if(hits.length>0){
-      selectVolcano(hits[0].object);deps.zoomToVolcano(hits[0].object.userData);
+      const sp = hits[0].object;
+      selectVolcano(sp);
+      pinTooltip(sp);
+      deps.zoomToVolcano(sp.userData);
     } else if(selectedVolcano){
       deselectVolcano();
     }
@@ -272,9 +309,20 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
   /* Escape key */
   window.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
+      if (lightboxEl.classList.contains('show')) {
+        lightboxEl.classList.remove('show');
+        return;
+      }
       deselectVolcano();deps.restoreView();
       tooltipEl.style.display='none';clusterEl.style.display='none';
       document.getElementById('search-results').style.display='none';
+    }
+  });
+
+  /* Lightbox close */
+  lightboxEl.addEventListener('click', e => {
+    if (e.target === lightboxEl || e.target.id === 'lightbox-close') {
+      lightboxEl.classList.remove('show');
     }
   });
 
@@ -290,6 +338,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     deselectVolcano,
     selectVolcano,
     updatePulse,
+    updatePinned,
     tooltipEl,
     clusterEl,
   };
