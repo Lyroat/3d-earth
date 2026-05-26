@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Earth 开发流程</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0b0e17;
+    --card:#151a2a;
+    --border:#1e2a44;
+    --accent:#4fc3f7;
+    --accent2:#7c4dff;
+    --text:#e0e6f0;
+    --muted:#7a8ba8;
+    --green:#66bb6a;
+    --orange:#ffa726;
+    --red:#ef5350;
+    --pink:#f06292;
+  }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;
+    background:var(--bg);color:var(--text);
+    line-height:1.7;overflow-x:hidden;
+  }
+
+  .hero{
+    min-height:52vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;
+    padding:60px 24px 40px;position:relative;overflow:hidden;
+  }
+  .hero::before{
+    content:'';position:absolute;width:500px;height:500px;
+    background:radial-gradient(circle,rgba(79,195,247,.12) 0%,transparent 70%);
+    top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+  }
+  .hero-emoji{font-size:72px;margin-bottom:20px;filter:drop-shadow(0 0 40px rgba(79,195,247,.3))}
+  .hero h1{font-size:clamp(26px,5vw,44px);font-weight:700;letter-spacing:-.5px;margin-bottom:12px}
+  .hero h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero .subtitle{font-size:17px;color:var(--muted);max-width:560px;line-height:1.8}
+
+  /* Section titles */
+  .sec-title{
+    text-align:center;font-size:13px;text-transform:uppercase;
+    letter-spacing:3px;color:var(--muted);margin-bottom:40px;
+  }
+
+  /* ===== Flow Section ===== */
+  .flow-section{max-width:820px;margin:0 auto;padding:0 24px 60px}
+
+  .flow{position:relative;padding-left:40px}
+  .flow::before{
+    content:'';position:absolute;left:16px;top:8px;bottom:8px;
+    width:2px;border-radius:2px;
+    background:linear-gradient(to bottom,var(--accent) 0%,var(--accent) 18%,transparent 18%,transparent 20%,var(--accent) 20%,var(--accent2) 65%,transparent 65%,transparent 67%,var(--accent2) 67%,var(--pink) 100%);
+  }
+
+  .f-step{margin-bottom:36px;position:relative}
+  .f-step:last-child{margin-bottom:0}
+
+  .f-dot{
+    position:absolute;left:-40px;top:3px;width:34px;height:34px;
+    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:700;color:#fff;z-index:1;
+    box-shadow:0 0 14px rgba(79,195,247,.25);
+  }
+
+  .f-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:22px 24px;
+    transition:border-color .3s,box-shadow .3s;
+  }
+  .f-card:hover{border-color:rgba(79,195,247,.4);box-shadow:0 0 20px rgba(79,195,247,.06)}
+
+  .f-card h3{font-size:19px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .f-card h3 .icon{font-size:20px}
+  .f-card p{color:var(--muted);font-size:14.5px}
+  .f-card p strong{color:var(--text)}
+
+  .f-detail{margin-top:10px;padding-left:16px;border-left:2px solid var(--border)}
+  .f-detail li{font-size:13.5px;color:var(--muted);margin-bottom:5px;list-style:none}
+  .f-detail li::before{content:'›';margin-right:8px;color:var(--accent);font-weight:700}
+
+  .f-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .f-tag{
+    font-size:11.5px;padding:3px 11px;border-radius:20px;
+    background:rgba(79,195,247,.1);color:var(--accent);
+    border:1px solid rgba(79,195,247,.2);
+  }
+  .f-tag.green{background:rgba(102,187,106,.1);color:var(--green);border-color:rgba(102,187,106,.2)}
+  .f-tag.orange{background:rgba(255,167,38,.1);color:var(--orange);border-color:rgba(255,167,38,.2)}
+  .f-tag.pink{background:rgba(240,98,146,.1);color:var(--pink);border-color:rgba(240,98,146,.2)}
+  .f-tag.purple{background:rgba(124,77,255,.1);color:var(--accent2);border-color:rgba(124,77,255,.2)}
+
+  /* Loop indicator */
+  .loop-wrap{position:relative;margin:8px 0 8px -40px;padding:0 0 0 40px}
+  .loop-bar{
+    position:absolute;left:4px;top:0;bottom:0;width:26px;
+    border:2px solid rgba(79,195,247,.25);border-right:none;
+    border-radius:14px 0 0 14px;
+  }
+  .loop-label{
+    position:absolute;left:-56px;top:50%;transform:translateY(-50%) rotate(-90deg);
+    font-size:11px;letter-spacing:2px;color:var(--accent);
+    white-space:nowrap;font-weight:600;opacity:.7;
+  }
+  .loop-badge{
+    text-align:center;margin:4px 0 12px;
+  }
+  .loop-badge span{
+    display:inline-block;font-size:12px;padding:4px 16px;border-radius:20px;
+    background:rgba(79,195,247,.08);color:var(--accent);
+    border:1px dashed rgba(79,195,247,.3);
+  }
+
+  /* Phase divider */
+  .phase-divider{
+    text-align:center;margin:48px 0 40px;position:relative;
+  }
+  .phase-divider::before{
+    content:'';position:absolute;left:0;right:0;top:50%;
+    height:1px;background:var(--border);
+  }
+  .phase-divider span{
+    position:relative;background:var(--bg);padding:0 20px;
+    font-size:13px;color:var(--muted);letter-spacing:1px;
+  }
+
+  /* Notes section */
+  .notes-section{max-width:820px;margin:0 auto;padding:0 24px 60px}
+  .notes-grid{display:flex;flex-direction:column;gap:16px}
+  .note-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:20px 24px;
+    border-left:3px solid var(--orange);
+    transition:border-color .3s,box-shadow .3s;
+  }
+  .note-card:hover{box-shadow:0 0 20px rgba(255,167,38,.06)}
+  .note-card h4{font-size:15px;font-weight:700;margin-bottom:0;display:flex;align-items:center;gap:8px}
+  .note-card h4 .n-icon{font-size:16px}
+  .note-card p{color:var(--muted);font-size:13.5px;margin-top:4px}
+  .note-card p strong{color:var(--text)}
+
+  /* Footer */
+  .footer{
+    text-align:center;padding:40px 24px 48px;
+    font-size:13px;color:var(--muted);
+    border-top:1px solid var(--border);max-width:820px;margin:0 auto;
+  }
+  .footer a{color:var(--accent);text-decoration:none}
+  .footer a:hover{text-decoration:underline}
+
+  /* Animations */
+  .f-step,.phase-divider,.loop-badge,.note-card{opacity:0;transform:translateY(20px);transition:opacity .5s,transform .5s}
+  .f-step.visible,.phase-divider.visible,.loop-badge.visible,.note-card.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-emoji">🌍</div>
+  <h1><span>3D Earth</span> 开发流程</h1>
+  <p class="subtitle">一个非程序员用 Cursor AI 从零搭建交互式 3D 地球科普网页</p>
+</div>
+
+<section class="flow-section">
+  <h2 class="sec-title">产品搭建阶段</h2>
+  <div class="flow">
+
+    <!-- Step 1 -->
+    <div class="f-step">
+      <div class="f-dot" style="background:linear-gradient(135deg,#4fc3f7,#29b6f6)">1</div>
+      <div class="f-card">
+        <h3><span class="icon">🎯</span>明确目标</h3>
+        <p>确定<strong>做什么</strong>和<strong>给谁看</strong>。这个项目的目标是：做一个面向中小学生的 3D 地球科普网页，能直观展示板块构造、火山分布、地球内部结构等地学知识。</p>
+        <div class="f-tags">
+          <span class="f-tag">科普教育</span>
+          <span class="f-tag green">中小学生</span>
+          <span class="f-tag">3D 可视化</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="f-step">
+      <div class="f-dot" style="background:linear-gradient(135deg,#66bb6a,#43a047)">2</div>
+      <div class="f-card">
+        <h3><span class="icon">🌐</span>搭建主体</h3>
+        <p>先让核心的东西出现——用 <strong>Three.js</strong> 创建一个可交互的 3D 地球模型。贴上 8K 高清地球贴图，加上凹凸地形，能拖拽旋转、滚轮缩放。这一步结束后，屏幕上有一个能转的地球了。</p>
+        <div class="f-tags">
+          <span class="f-tag purple">Three.js</span>
+          <span class="f-tag">8K 贴图</span>
+          <span class="f-tag orange">凹凸地形</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loop start badge -->
+    <div class="loop-badge"><span>↓ 以下 3→4→5→6 每个功能循环一轮 ↓</span></div>
+
+    <!-- Loop wrapper -->
+    <div class="loop-wrap">
+      <div class="loop-bar"></div>
+      <div class="loop-label">功 能 循 环</div>
+
+      <!-- Step 3 -->
+      <div class="f-step">
+        <div class="f-dot" style="background:linear-gradient(135deg,#ffa726,#fb8c00)">3</div>
+        <div class="f-card">
+          <h3><span class="icon">🔧</span>开发功能</h3>
+          <p>逐个开发功能模块。每次聚焦<strong>一个功能</strong>，做完再做下一个。不贪多，做一个成一个。</p>
+          <ul class="f-detail">
+            <li><strong>板块构造</strong>：三种边界类型 + 14 个主要板块导航 + 拆分动画</li>
+            <li><strong>火山分布</strong>：1416 座火山标记、搜索、分类筛选</li>
+            <li><strong>地球内部</strong>：剖面切割、7 层可视化、层级聚焦</li>
+            <li><strong>地球磁场</strong>：磁感线分布（开发中）</li>
+            <li><strong>日地月系统</strong>：自转公转（计划中）</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="f-step">
+        <div class="f-dot" style="background:linear-gradient(135deg,#26c6da,#00acc1)">4</div>
+        <div class="f-card">
+          <h3><span class="icon">🔍</span>寻找数据与素材</h3>
+          <p>每个功能都需要<strong>真实的科学数据</strong>。去专业网站和开源社区找可用的数据集、贴图、模型。</p>
+          <ul class="f-detail">
+            <li><strong>地球贴图</strong>：Solar System Scope（NASA 级 8K 日照贴图）</li>
+            <li><strong>板块数据</strong>：GitHub fraxen/tectonicplates（PB2002 数据集，GeoJSON 格式）</li>
+            <li><strong>火山数据</strong>：史密森尼学会 Global Volcanism Program（1416 座火山）</li>
+            <li><strong>磁场数据</strong>：GitHub wb-bgs/m_IGRF、AnkitBarik/planetMagFields</li>
+          </ul>
+          <div class="f-tags">
+            <span class="f-tag green">NASA</span>
+            <span class="f-tag">GitHub 开源</span>
+            <span class="f-tag orange">GVP 史密森尼</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="f-step">
+        <div class="f-dot" style="background:linear-gradient(135deg,#ef5350,#e53935)">5</div>
+        <div class="f-card">
+          <h3><span class="icon">🐛</span>调试与迭代</h3>
+          <p>开发过程中最耗时间的部分。反复测试、发现问题、修改、再测试。对于非程序员来说，这个阶段也是<strong>学习技术术语</strong>的过程——得知道"CSS 是什么""Shader 是什么"才能和 AI 准确沟通需求。</p>
+          <ul class="f-detail">
+            <li>Shader 剖面切割方案迭代了 6 个版本才成功</li>
+            <li>云层效果尝试了 4 种方案后果断砍掉（理性止损）</li>
+            <li>火山中英文翻译修正了 238 个错误</li>
+            <li>学会了"CSS = 样式""JS = 逻辑""Shader = 着色器"等关键概念</li>
+          </ul>
+          <div class="f-tags">
+            <span class="f-tag pink">反复迭代</span>
+            <span class="f-tag">学习术语</span>
+            <span class="f-tag purple">理性止损</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div class="f-step">
+        <div class="f-dot" style="background:linear-gradient(135deg,#ab47bc,#8e24aa)">6</div>
+        <div class="f-card">
+          <h3><span class="icon">📝</span>增加注释</h3>
+          <p>在代码关键位置加上<strong>人类可读的注释</strong>，标注"这段代码控制什么""修改哪个数值会影响什么效果"。这样后续想手动微调某个参数时（比如地球转速、颜色深浅），不用每次都问 AI，自己就能动手。</p>
+          <div class="f-tags">
+            <span class="f-tag">降低维护门槛</span>
+            <span class="f-tag green">人工可调</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- loop-wrap end -->
+
+    <div class="loop-badge"><span>↑ 回到步骤 3，开始下一个功能 ↑</span></div>
+
+  </div>
+</section>
+
+<section class="flow-section">
+  <div class="phase-divider"><span>产品上线后进入打磨阶段</span></div>
+  <div class="flow">
+
+    <!-- Step 7 -->
+    <div class="f-step">
+      <div class="f-dot" style="background:linear-gradient(135deg,#78909c,#546e7a)">7</div>
+      <div class="f-card">
+        <h3><span class="icon">🚀</span>部署上线</h3>
+        <p>把网页部署到线上，让别人也能打开看。用 <strong>Vercel</strong> 一键部署，关联 GitHub 仓库，每次提交代码自动更新。</p>
+        <div class="f-tags">
+          <span class="f-tag green">Vercel</span>
+          <span class="f-tag">自动部署</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 8 -->
+    <div class="f-step">
+      <div class="f-dot" style="background:linear-gradient(135deg,#8d6e63,#6d4c41)">8</div>
+      <div class="f-card">
+        <h3><span class="icon">📦</span>结构重构与文件瘦身</h3>
+        <p>项目跑通之后回头整理"房间"。把 1700 行的单文件拆分为<strong>独立的 HTML + CSS + JS</strong>，按功能模块归入不同文件夹，清理不需要的大文件（60+ MB 的贴图）。</p>
+        <ul class="f-detail">
+          <li>v2.0 重构：单文件 → 模块化文件结构</li>
+          <li>按功能分文件夹：earth/、plates/、volcanoes/、interior/、magnetic/</li>
+          <li>清理 git 中的大文件，创建 .gitignore</li>
+        </ul>
+        <div class="f-tags">
+          <span class="f-tag orange">v2.0 重构</span>
+          <span class="f-tag">模块化</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 9 -->
+    <div class="f-step">
+      <div class="f-dot" style="background:linear-gradient(135deg,#ff7043,#f4511e)">9</div>
+      <div class="f-card">
+        <h3><span class="icon">🎛</span>交互逻辑优化</h3>
+        <p>调整用户操作的<strong>逻辑和层级关系</strong>。哪些按钮该放在一起、面板怎么组织、操作流程是否顺畅。</p>
+        <ul class="f-detail">
+          <li>底部弹出菜单 → 左侧面板（信息层级更清晰）</li>
+          <li>板块导航加滚动条，避免列表过长</li>
+          <li>面板宽度自适应文字内容</li>
+          <li>统一各面板的视觉风格</li>
+        </ul>
+        <div class="f-tags">
+          <span class="f-tag purple">UI/UX</span>
+          <span class="f-tag">信息层级</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 10 -->
+    <div class="f-step">
+      <div class="f-dot" style="background:linear-gradient(135deg,#7c4dff,#651fff)">10</div>
+      <div class="f-card">
+        <h3><span class="icon">✨</span>内容丰容</h3>
+        <p>在功能框架之上<strong>补充内容深度</strong>。增加科普知识卡片、优化配色和视觉质感，让产品从"能用"变成"好用且好看"。</p>
+        <ul class="f-detail">
+          <li>知识卡片：板块边界图文说明、各地层详细信息、火山类型介绍</li>
+          <li>外核动态熔流动画（模拟热对流物理现象）</li>
+          <li>内部着色：连续径向渐变替代分层色块，过渡更自然</li>
+          <li>术语修正：确保科学名词准确（"汇聚型""离散型""过渡带"）</li>
+        </ul>
+        <div class="f-tags">
+          <span class="f-tag pink">知识卡片</span>
+          <span class="f-tag purple">视觉精修</span>
+          <span class="f-tag green">科学准确</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="notes-section">
+  <div class="phase-divider"><span>建议</span></div>
+
+  <div class="notes-grid">
+    <div class="note-card">
+      <h4><span class="n-icon">📁</span>及早瘦身，控制文件体积</h4>
+      <p>大贴图和过长的单文件会导致 AI 读取超量，需及时拆分模块、排除大文件</p>
+    </div>
+
+    <div class="note-card">
+      <h4><span class="n-icon">✂️</span>敢于砍掉不合适的功能</h4>
+      <p>云层效果试了 4 版都不理想，且与核心主题关联不大，果断砍掉不影响使用</p>
+    </div>
+
+    <div class="note-card">
+      <h4><span class="n-icon">🔬</span>科学数据不能盲信 AI</h4>
+      <p>1416 个火山名称中有 238 个翻译错误，科学术语也需人工核实</p>
+    </div>
+
+    <div class="note-card">
+      <h4><span class="n-icon">🐙</span>善用 GitHub 开源资源</h4>
+      <p>很多数据和模型是现成的，可以直接获取使用。本项目用到的开源项目：<a href="https://github.com/fraxen/tectonicplates" target="_blank" style="color:var(--accent)">fraxen/tectonicplates</a>（全球板块边界 GeoJSON）、<a href="https://github.com/wb-bgs/m_IGRF" target="_blank" style="color:var(--accent)">wb-bgs/m_IGRF</a>（国际地磁参考场模型）、<a href="https://github.com/AnkitBarik/planetMagFields" target="_blank" style="color:var(--accent)">AnkitBarik/planetMagFields</a>（行星磁场可视化）</p>
+    </div>
+
+    <div class="note-card">
+      <h4><span class="n-icon">🧊</span>了解一下 Three.js</h4>
+      <p><a href="https://threejs.org" target="_blank" style="color:var(--accent)">Three.js</a> 是一个 JavaScript 3D 渲染库，能在浏览器中创建 3D 场景。本项目用它实现了地球模型渲染、板块边界绘制、火山标记、内部剖面切割等所有 3D 效果。它还可以做 3D 产品展示、数据可视化、游戏、建筑漫游、虚拟展厅等</p>
+    </div>
+  </div>
+</section>
+
+<div class="footer">
+  <p>在线体验：<a href="https://earth-volcano-3d.vercel.app/" target="_blank">earth-volcano-3d.vercel.app</a></p>
+  <p style="margin-top:8px">2026 年 4–5 月 · 用 Cursor AI 从零搭建 · 零编程基础</p>
+</div>
+
+<script>
+const els = document.querySelectorAll('.f-step,.phase-divider,.loop-badge,.note-card');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.15 });
+els.forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

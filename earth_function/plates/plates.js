@@ -27,9 +27,9 @@ const PLATES = [
 ];
 
 const KC_DATA_BOUNDARY = {
-  'boundary-c':{title:'汇聚型板块边界',img:'plates/textures/汇聚型板块边界.jpg',desc:'<p>两个板块相向运动，其中一个板块的前端在另一个板块下方滑动并向下弯曲。</p>'},
-  'boundary-d':{title:'离散型板块边界',img:'plates/textures/离散型板块边界.jpg',desc:'<p>两个板块相反运动，地幔热物质上涌并部分熔融，从而生成新洋底。</p>'},
-  'boundary-t':{title:'转换断层',img:'plates/textures/转换断层.jpg',desc:'<p>两个板块彼此交错滑动，不会发生岩石圈的增减。</p>'},
+  'boundary-c':{title:'汇聚型板块边界',img:'earth_function/plates/textures/汇聚型板块边界.jpg',desc:'<p>两个板块相向运动，其中一个板块的前端在另一个板块下方滑动并向下弯曲。</p>'},
+  'boundary-d':{title:'离散型板块边界',img:'earth_function/plates/textures/离散型板块边界.jpg',desc:'<p>两个板块相反运动，地幔热物质上涌并部分熔融，从而生成新洋底。</p>'},
+  'boundary-t':{title:'转换断层',img:'earth_function/plates/textures/转换断层.jpg',desc:'<p>两个板块彼此交错滑动，不会发生岩石圈的增减。</p>'},
 };
 
 export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 }, deps) {
@@ -38,7 +38,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
   scene.add(boundaryGroup);
   const bPairs = [];
 
-  const PB = await fetch('plates/pb-data.json').then(r => r.json());
+  const PB = await fetch('earth_function/plates/pb-data.json').then(r => r.json());
 
   function parsePlate(code){ return code.replace(/[\\\/]/g,'-').split('-').map(p=>PLATE_NAMES[p]||p).join(' — '); }
 

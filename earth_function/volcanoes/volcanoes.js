@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getPhotosForVolcano, getPhotoUrl } from '../photos/photos.js';
+import { getPhotosForVolcano, getPhotoUrl } from '../../photos/photos.js';
 
 const VOLCANO_R = 1.025; // 火山标记离地表高度（1=贴地表，越大越高）
 const CLUSTER_PX = 28; // 火山聚合判定像素半径（屏幕距离内的火山会合并为一组）
@@ -32,7 +32,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
   const volcanoSprites = [];
   const vCounts = {a:0,d:0,e:0,u:0};
 
-  const V_DATA = await fetch('volcanoes/data.json').then(r => r.json());
+  const V_DATA = await fetch('earth_function/volcanoes/data.json').then(r => r.json());
 
   V_DATA.forEach(([lon,lat,name,nameCn,type,typeCn,sc,statusCn,statusEn,region,lastErupt,lastEruptCn]) => {
     vCounts[sc] = (vCounts[sc]||0) + 1;

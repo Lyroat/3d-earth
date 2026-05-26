@@ -7,12 +7,12 @@ const STATIC_ASSETS = [
   'earth/bump.jpg',
   'sem/sun.jpg',
   'sem/moon.jpg',
-  'plates/pb-data.json',
-  'plates/split-data.json',
-  'plates/textures/汇聚型板块边界.jpg',
-  'plates/textures/离散型板块边界.jpg',
-  'plates/textures/转换断层.jpg',
-  'volcanoes/data.json',
+  'earth_function/plates/pb-data.json',
+  'earth_function/plates/split-data.json',
+  'earth_function/plates/textures/汇聚型板块边界.jpg',
+  'earth_function/plates/textures/离散型板块边界.jpg',
+  'earth_function/plates/textures/转换断层.jpg',
+  'earth_function/volcanoes/data.json',
 ];
 
 export default defineConfig({

@@ -13,7 +13,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
   const splitGroups = {};
   let splitInited = false, splitActive = false, splitProgress = 0, splitDir = 0;
 
-  const SPLIT_INFO = await fetch('plates/split-data.json').then(r => r.json());
+  const SPLIT_INFO = await fetch('earth_function/plates/split-data.json').then(r => r.json());
 
   function makeTextSprite(text, color){
     const cv=document.createElement('canvas');cv.width=512;cv.height=128;
