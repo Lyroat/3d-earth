@@ -110,8 +110,8 @@ export function initUploadModal() {
     statusEl.textContent = '上传中…';
 
     try {
-      const canvas = cropper.getCroppedCanvas({ width: 900, height: 600, imageSmoothingQuality: 'high' });
-      const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
+      const canvas = cropper.getCroppedCanvas({ width: 1800, height: 1200, imageSmoothingQuality: 'high' });
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
       await uploadPhoto(currentVolcanoId, nameInput.value.trim(), blob);
       statusEl.textContent = '上传成功！照片将在审核通过后显示。';
       setTimeout(closeModal, 2000);
