@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>照片审核后台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0c0c1c;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;padding:24px;min-height:100vh}
+h1{font-size:20px;font-weight:600;margin-bottom:20px;color:rgba(255,255,255,.9)}
+.login{max-width:320px;margin:80px auto;text-align:center;display:flex;flex-direction:column;gap:12px}
+.login input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:14px;padding:10px 14px;outline:none;font-family:inherit;text-align:center}
+.login input:focus{border-color:rgba(77,195,247,.5)}
+.login button{padding:10px;border:none;border-radius:8px;background:rgba(77,195,247,.25);color:#4fc3f7;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.login button:hover{background:rgba(77,195,247,.4)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden}
+.card img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
+.card-body{padding:12px;display:flex;flex-direction:column;gap:6px}
+.card-volcano{font-size:14px;font-weight:600}
+.card-meta{font-size:11px;color:rgba(255,255,255,.4)}
+.card-actions{display:flex;gap:8px;margin-top:4px}
+.btn-approve,.btn-reject{flex:1;padding:8px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-approve{background:rgba(76,175,80,.2);color:#66bb6a}
+.btn-approve:hover{background:rgba(76,175,80,.4)}
+.btn-reject{background:rgba(244,67,54,.15);color:#ef5350}
+.btn-reject:hover{background:rgba(244,67,54,.35)}
+.empty{text-align:center;color:rgba(255,255,255,.3);padding:60px 0;font-size:14px}
+.status-msg{text-align:center;color:rgba(255,200,100,.8);padding:12px;font-size:13px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{padding:6px 16px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;font-family:inherit}
+.tab.active{background:rgba(77,195,247,.2);border-color:rgba(77,195,247,.4);color:#fff}
+</style>
+</head>
+<body>
+
+<div class="login" id="login-section">
+  <h1>照片审核后台</h1>
+  <input type="password" id="admin-pwd" placeholder="管理员密码" />
+  <button id="login-btn">登录</button>
+  <div id="login-error" class="status-msg" style="display:none"></div>
+</div>
+
+<div id="admin-section" style="display:none">
+  <h1>照片审核后台</h1>
+  <div class="tabs">
+    <button class="tab active" data-status="pending">待审核</button>
+    <button class="tab" data-status="approved">已通过</button>
+    <button class="tab" data-status="rejected">已拒绝</button>
+  </div>
+  <div id="photo-grid" class="grid"></div>
+  <div id="status-msg" class="status-msg" style="display:none"></div>
+</div>
+
+<script type="module">
+const SUPABASE_URL = 'https://kbighainzawljrmtxolw.supabase.co';
+let adminKey = '';
+let currentTab = 'pending';
+
+document.getElementById('login-btn').addEventListener('click', tryLogin);
+document.getElementById('admin-pwd').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+
+async function tryLogin() {
+  adminKey = document.getElementById('admin-pwd').value;
+  if (!adminKey) return;
+  try {
+    const res = await fetch('/api/admin/pending', { headers: { 'x-admin-key': adminKey } });
+    if (!res.ok) throw new Error('密码错误');
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('admin-section').style.display = 'block';
+    loadPhotos('pending');
+  } catch (e) {
+    const el = document.getElementById('login-error');
+    el.textContent = e.message;
+    el.style.display = 'block';
+  }
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTab = tab.dataset.status;
+    loadPhotos(currentTab);
+  });
+});
+
+async function loadPhotos(status) {
+  const grid = document.getElementById('photo-grid');
+  grid.innerHTML = '<div class="empty">加载中…</div>';
+  try {
+    const res = await fetch(`/api/admin/pending?status=${status}`, { headers: { 'x-admin-key': adminKey } });
+    const data = await res.json();
+    if (!data.length) { grid.innerHTML = '<div class="empty">暂无照片</div>'; return; }
+    grid.innerHTML = data.map(p => `
+      <div class="card" data-id="${p.id}">
+        <img src="${SUPABASE_URL}/storage/v1/object/public/volcano-photos/${p.image_path}" />
+        <div class="card-body">
+          <div class="card-volcano">${p.volcano_id}</div>
+          <div class="card-meta">上传者: ${p.uploader_id} · ${new Date(p.created_at).toLocaleString('zh-CN')}</div>
+          ${status === 'pending' ? `<div class="card-actions">
+            <button class="btn-approve" onclick="reviewPhoto('${p.id}','approved')">通过</button>
+            <button class="btn-reject" onclick="reviewPhoto('${p.id}','rejected')">拒绝</button>
+          </div>` : ''}
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    grid.innerHTML = `<div class="empty">加载失败: ${e.message}</div>`;
+  }
+}
+
+window.reviewPhoto = async function(id, status) {
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  try {
+    const res = await fetch('/api/admin/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ id, status }),
+    });
+    if (!res.ok) throw new Error('操作失败');
+    if (card) card.remove();
+    const remaining = document.querySelectorAll('.card');
+    if (!remaining.length) document.getElementById('photo-grid').innerHTML = '<div class="empty">暂无照片</div>';
+  } catch (e) {
+    alert(e.message);
+  }
+};
+</script>
+</body>
+</html>

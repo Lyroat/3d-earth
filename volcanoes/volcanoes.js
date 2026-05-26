@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getPhotosForVolcano, getPhotoUrl } from '../photos/photos.js';
 
 const VOLCANO_R = 1.025; // 火山标记离地表高度（1=贴地表，越大越高）
 const CLUSTER_PX = 28; // 火山聚合判定像素半径（屏幕距离内的火山会合并为一组）
@@ -67,11 +68,15 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
   });
 
   /* Select / Deselect */
+  const uploadTrigger = document.getElementById('upload-trigger');
   let selectedVolcano = null;
   function selectVolcano(sp){
     selectedVolcano = sp;
     volcanoSprites.forEach(s=>{if(s!==sp) s.visible=false;});
     sp.visible = true;
+    uploadTrigger.style.display = 'block';
+    uploadTrigger.dataset.volcanoId = sp.userData.name;
+    uploadTrigger.dataset.volcanoName = sp.userData.nameCn || sp.userData.name;
   }
   function deselectVolcano(){
     if(!selectedVolcano) return;
@@ -79,6 +84,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     volcanoSprites.forEach(sp=>{
       sp.visible = activeVFilter ? (sp.userData.sc===activeVFilter) : true;
     });
+    uploadTrigger.style.display = 'none';
   }
 
   /* Search */
@@ -149,15 +155,19 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
   }
 
   function tipHTML(d){
-    const dc=VCOLORS[d.sc]||VCOLORS.u; // tooltip中活跃度文字颜色（取火山状态对应色）
+    const dc=VCOLORS[d.sc]||VCOLORS.u;
     const nameLine = d.nameCn&&d.nameCn!==d.name
       ? `<div class="tip-name-cn">${d.nameCn}</div><div class="tip-name-en">${d.name}</div>`
       : `<div class="tip-name-cn">${d.name}</div>`;
+    const photos = getPhotosForVolcano(d.name);
+    const photoHtml = photos.length > 0
+      ? `<div class="tip-photo"><img src="${getPhotoUrl(photos[0].image_path)}" /><div class="tip-credit">📷 ${photos[0].uploader_id} · CC BY 4.0</div></div>`
+      : '';
     return `${nameLine}<div class="tip-sep"></div>
 <div class="tip-row"><span class="tip-label">类型</span><span class="tip-val">${d.typeCn}（${d.type}）</span></div>
 <div class="tip-row"><span class="tip-label">活跃度</span><span class="tip-val" style="color:${dc}">${d.statusCn}（${d.statusEn}）</span></div>
 <div class="tip-row"><span class="tip-label">位置</span><span class="tip-val">${d.region}</span></div>
-<div class="tip-row"><span class="tip-label">上次喷发</span><span class="tip-val">${d.lastEruptCn||'未知'}</span></div>`;
+<div class="tip-row"><span class="tip-label">上次喷发</span><span class="tip-val">${d.lastEruptCn||'未知'}</span></div>${photoHtml}`;
   }
   function posEl(el,x,y){
     el.style.display='block';el.style.transform='';
@@ -219,7 +229,12 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
         const mx=e.clientX,my=e.clientY;
         const nearby=[];vis.forEach(sp=>{const p=screenPos(sp);if(p.z>1)return;const dx=p.x-mx,dy=p.y-my;if(Math.sqrt(dx*dx+dy*dy)<CLUSTER_PX)nearby.push(sp);}); // 聚合检测：屏幕像素距离<CLUSTER_PX的火山归为一组
         if(nearby.length>1){tooltipEl.style.display='none';buildCluster(nearby,mx,my);document.body.style.cursor='pointer';return;}
-        clusterEl.style.display='none';tooltipEl.innerHTML=tipHTML(vHits[0].object.userData);posEl(tooltipEl,mx,my);document.body.style.cursor='pointer';return;
+        clusterEl.style.display='none';
+        const _d=vHits[0].object.userData;const _ph=getPhotosForVolcano(_d.name);
+        tooltipEl.innerHTML=tipHTML(_d);
+        tooltipEl.style.whiteSpace=_ph.length>0?'normal':'nowrap';
+        tooltipEl.style.maxWidth=_ph.length>0?'280px':'';
+        posEl(tooltipEl,mx,my);document.body.style.cursor='pointer';return;
       }
     }
     clusterEl.style.display='none';

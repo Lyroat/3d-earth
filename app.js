@@ -9,6 +9,7 @@ import { init as initPlates } from './plates/plates.js';
 import { init as initSplit } from './plates/split.js';
 import { init as initVolcanoes } from './volcanoes/volcanoes.js';
 import { init as initInterior } from './interior/interior.js';
+import { loadApprovedPhotos, initUploadModal } from './photos/photos.js';
 
 /* ══════════ Scene — 场景、相机、渲染器初始化 ══════════ */
 const TILT = THREE.MathUtils.degToRad(23.4); // 地轴倾斜角度（度）
@@ -244,6 +245,13 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
 
   boundaryGroup = plates.boundaryGroup;
   volcanoGroup = volcano.volcanoGroup;
+
+  /* ══════════ Photos: load approved & wire upload button ══════════ */
+  loadApprovedPhotos();
+  const photoModal = initUploadModal();
+  document.getElementById('upload-trigger').addEventListener('click', (e) => {
+    photoModal.openModal(e.target.dataset.volcanoId, e.target.dataset.volcanoName);
+  });
 
   /* ══════════ Initial state: hide boundaries & volcanoes ══════════ */
   boundaryGroup.visible = false;

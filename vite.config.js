@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import { copyFileSync, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 
 const STATIC_ASSETS = [
   'earth/earth.jpg',
@@ -26,6 +26,10 @@ export default defineConfig({
       format: { comments: false },
     },
     rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        admin: resolve(import.meta.dirname, 'admin.html'),
+      },
       output: {
         entryFileNames: 'assets/[hash].js',
         chunkFileNames: 'assets/[hash].js',

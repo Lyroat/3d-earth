@@ -82,6 +82,27 @@
 <!-- ══ SEM 科普卡片堆叠容器 ══ -->
 <div id="sem-kc-stack"></div>
 
+<!-- ══ 火山照片上传触发按钮 ══ -->
+<button id="upload-trigger">📸 上传照片</button>
+
+<!-- ══ 照片上传弹窗 ══ -->
+<div id="upload-modal">
+  <div class="upload-content">
+    <button class="kc-close" id="upload-close">&times;</button>
+    <div class="upload-title">上传火山照片</div>
+    <div class="upload-volcano" id="upload-volcano-name"></div>
+    <label class="upload-file-label">
+      <span>选择照片</span>
+      <input type="file" id="upload-file" accept="image/*" />
+    </label>
+    <div id="cropper-container"><img id="cropper-img" /></div>
+    <input type="text" id="uploader-id" placeholder="你的昵称 / ID" autocomplete="off" />
+    <label class="upload-cc"><input type="checkbox" id="cc-check" /> 我同意以 CC BY 4.0 协议授权本照片</label>
+    <button class="upload-btn" id="upload-submit">上传</button>
+    <div id="upload-status"></div>
+  </div>
+</div>
+
 <!-- ══ 日-地-月系统面板 ══ -->
 <div class="side-panel" id="sem-panel">
   <div class="sp-section">

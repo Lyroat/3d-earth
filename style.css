@@ -140,3 +140,33 @@ canvas{display:block}
 .kc-close{position:absolute;top:8px;right:10px;background:none;border:none;color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s}
 .kc-close:hover{color:#fff;background:rgba(255,255,255,.1)}
 
+/* ── Tooltip Photo 火山照片（tooltip内） ── */
+.tip-photo{margin-top:6px;border-radius:6px;overflow:hidden}
+.tip-photo img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
+.tip-credit{font-size:9px;color:rgba(255,255,255,.35);padding:3px 0 0}
+
+/* ── Upload Trigger 上传触发按钮 ── */
+#upload-trigger{display:none;position:absolute;bottom:60px;left:50%;transform:translateX(-50%);z-index:11;padding:8px 18px;border:1px solid rgba(100,200,255,.3);border-radius:8px;background:rgba(100,200,255,.12);color:rgba(100,200,255,.9);font-size:13px;cursor:pointer;font-family:inherit;backdrop-filter:blur(12px);transition:all .15s;pointer-events:auto}
+#upload-trigger:hover{background:rgba(100,200,255,.25);color:#fff}
+
+/* ── Upload Modal 上传弹窗 ── */
+#upload-modal{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(6px)}
+#upload-modal.show{display:flex}
+.upload-content{position:relative;background:rgba(12,12,28,.95);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:24px;width:380px;max-width:90vw;max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.upload-title{font-size:16px;font-weight:600;color:rgba(255,255,255,.9)}
+.upload-volcano{font-size:12px;color:rgba(100,200,255,.8);margin-top:-6px}
+.upload-file-label{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px dashed rgba(255,255,255,.2);border-radius:8px;color:rgba(255,255,255,.6);font-size:12px;cursor:pointer;transition:all .15s}
+.upload-file-label:hover{border-color:rgba(100,200,255,.4);color:#fff}
+.upload-file-label input{display:none}
+#cropper-container{display:none;max-height:50vh;overflow:hidden;border-radius:8px}
+#cropper-img{max-width:100%;display:block}
+#uploader-id{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:13px;padding:8px 12px;outline:none;font-family:inherit}
+#uploader-id:focus{border-color:rgba(77,195,247,.5)}
+#uploader-id::placeholder{color:rgba(255,255,255,.3)}
+.upload-cc{font-size:11px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:6px;cursor:pointer}
+.upload-cc input{accent-color:#4fc3f7}
+.upload-btn{padding:10px;border:none;border-radius:8px;background:rgba(77,195,247,.25);color:#4fc3f7;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.upload-btn:hover{background:rgba(77,195,247,.4);color:#fff}
+.upload-btn:disabled{opacity:.4;cursor:not-allowed}
+#upload-status{font-size:12px;color:rgba(255,200,100,.8);min-height:18px}
+
