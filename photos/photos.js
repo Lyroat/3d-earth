@@ -11,7 +11,7 @@ const photoCache = new Map();
 export async function loadApprovedPhotos() {
   const { data } = await supabase
     .from('photos')
-    .select('volcano_id, image_path, uploader_id, is_featured')
+    .select('volcano_id, image_path, uploader_id, is_featured, taken_date, description')
     .eq('status', 'approved')
     .order('created_at', { ascending: false });
 
@@ -35,7 +35,7 @@ export function getPhotoUrl(imagePath) {
   return `${SUPABASE_URL}/storage/v1/object/public/volcano-photos/${imagePath}`;
 }
 
-async function uploadPhoto(volcanoId, uploaderId, blob) {
+async function uploadPhoto(volcanoId, uploaderId, blob, takenDate, description) {
   const safeName = volcanoId.replace(/[^a-zA-Z0-9_-]/g, '_');
   const filename = `${safeName}/${Date.now()}.jpg`;
 
@@ -44,11 +44,15 @@ async function uploadPhoto(volcanoId, uploaderId, blob) {
     .upload(filename, blob, { contentType: 'image/jpeg' });
   if (storageErr) throw storageErr;
 
-  const { error: dbErr } = await supabase.from('photos').insert({
+  const row = {
     volcano_id: volcanoId,
     uploader_id: uploaderId,
     image_path: filename,
-  });
+  };
+  if (takenDate) row.taken_date = takenDate;
+  if (description) row.description = description;
+
+  const { error: dbErr } = await supabase.from('photos').insert(row);
   if (dbErr) throw dbErr;
 }
 
@@ -59,6 +63,8 @@ export function initUploadModal() {
   const cropWrap = document.getElementById('cropper-container');
   const cropImg  = document.getElementById('cropper-img');
   const nameInput = document.getElementById('uploader-id');
+  const dateInput = document.getElementById('taken-date');
+  const descInput = document.getElementById('photo-desc');
   const ccCheck  = document.getElementById('cc-check');
   const submitBtn = document.getElementById('upload-submit');
   const closeBtn = document.getElementById('upload-close');
@@ -73,6 +79,8 @@ export function initUploadModal() {
     if (cropper) { cropper.destroy(); cropper = null; }
     fileInput.value = '';
     nameInput.value = '';
+    dateInput.value = '';
+    descInput.value = '';
     ccCheck.checked = false;
     statusEl.textContent = '';
     cropWrap.style.display = 'none';
@@ -116,7 +124,7 @@ export function initUploadModal() {
     try {
       const canvas = cropper.getCroppedCanvas({ width: 1800, height: 1200, imageSmoothingQuality: 'high' });
       const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
-      await uploadPhoto(currentVolcanoId, nameInput.value.trim(), blob);
+      await uploadPhoto(currentVolcanoId, nameInput.value.trim(), blob, dateInput.value || null, descInput.value.trim() || null);
       statusEl.textContent = '上传成功！照片将在审核通过后显示。';
       setTimeout(closeModal, 2000);
     } catch (err) {

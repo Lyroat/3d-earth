@@ -194,9 +194,13 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
       ? `<div class="tip-name-cn">${d.nameCn}</div><div class="tip-name-en">${d.name}</div>`
       : `<div class="tip-name-cn">${d.name}</div>`;
     const photos = getPhotosForVolcano(d.name);
-    const photoHtml = photos.length > 0
-      ? `<div class="tip-photo"><img src="${getPhotoUrl(photos[0].image_path)}" /><div class="tip-credit">📷 ${photos[0].uploader_id} · CC BY 4.0</div></div>`
-      : '';
+    let photoHtml = '';
+    if (photos.length > 0) {
+      const p = photos[0];
+      const descLine = p.description ? `<div class="tip-desc">${p.description}</div>` : '';
+      const datePart = p.taken_date ? ` · ${p.taken_date}` : '';
+      photoHtml = `<div class="tip-photo"><img src="${getPhotoUrl(p.image_path)}" />${descLine}<div class="tip-credit">📷 ${p.uploader_id}${datePart} · CC BY 4.0</div></div>`;
+    }
     return `${nameLine}<div class="tip-sep"></div>
 <div class="tip-row"><span class="tip-label">类型</span><span class="tip-val">${d.typeCn}（${d.type}）</span></div>
 <div class="tip-row"><span class="tip-label">活跃度</span><span class="tip-val" style="color:${dc}">${d.statusCn}（${d.statusEn}）</span></div>

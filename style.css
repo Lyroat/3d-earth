@@ -143,6 +143,7 @@ canvas{display:block}
 /* ── Tooltip Photo 火山照片（tooltip内） ── */
 .tip-photo{margin-top:6px;border-radius:6px;overflow:hidden}
 .tip-photo img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
+.tip-desc{font-size:10px;color:rgba(255,255,255,.6);padding:4px 0 0;line-height:1.4}
 .tip-credit{font-size:9px;color:rgba(255,255,255,.35);padding:3px 0 0}
 #tooltip.pinned{pointer-events:auto}
 #tooltip.pinned .tip-photo img{cursor:pointer;transition:opacity .15s}
@@ -170,9 +171,11 @@ canvas{display:block}
 .upload-file-label input{display:none}
 #cropper-container{display:none;max-height:50vh;overflow:hidden;border-radius:8px}
 #cropper-img{max-width:100%;display:block}
-#uploader-id{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:13px;padding:8px 12px;outline:none;font-family:inherit}
-#uploader-id:focus{border-color:rgba(77,195,247,.5)}
-#uploader-id::placeholder{color:rgba(255,255,255,.3)}
+#uploader-id,#taken-date,#photo-desc{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:13px;padding:8px 12px;outline:none;font-family:inherit}
+#uploader-id:focus,#taken-date:focus,#photo-desc:focus{border-color:rgba(77,195,247,.5)}
+#uploader-id::placeholder,#photo-desc::placeholder{color:rgba(255,255,255,.3)}
+#taken-date{color-scheme:dark}
+#photo-desc{resize:none}
 .upload-cc{font-size:11px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:6px;cursor:pointer}
 .upload-cc input{accent-color:#4fc3f7}
 .upload-btn{padding:10px;border:none;border-radius:8px;background:rgba(77,195,247,.25);color:#4fc3f7;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
