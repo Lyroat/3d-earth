@@ -159,7 +159,10 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
       if(matches.length===0){searchResults.innerHTML=`<div class="sr-item" style="color:rgba(255,255,255,.4)">${t('v.noMatch')}</div>`;searchResults.style.display='block';return;}
       searchResults.innerHTML=matches.map((sp,i)=>{
         const d=sp.userData;const dc=VCOLORS[d.sc]||VCOLORS.u;
-        return `<div class="sr-item" data-sidx="${i}"><span class="sr-name"><span style="color:${dc}">●</span> ${d.nameCn!==d.name?d.nameCn+' ':''}<small>${d.name}</small></span><span class="sr-sub">${d.statusCn}</span></div>`;
+        const isZh = getLang() === 'zh';
+        const srName = isZh ? (d.nameCn!==d.name?d.nameCn+' ':'') : '';
+        const srSub = isZh ? d.statusCn : d.statusEn;
+        return `<div class="sr-item" data-sidx="${i}"><span class="sr-name"><span style="color:${dc}">●</span> ${srName}<small>${d.name}</small></span><span class="sr-sub">${srSub}</span></div>`;
       }).join('');
       searchResults.style.display='block';
       searchResults.querySelectorAll('.sr-item').forEach((el,i)=>{
@@ -254,9 +257,11 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
   function buildCluster(sprites,mx,my){
     clusterSprites=sprites;const clusterData=sprites.map(s=>s.userData);
     let h=`<div class="cl-title">${t('v.clusterTitle').replace('{n}',sprites.length)}</div>`;
+    const isZhCl = getLang() === 'zh';
     clusterData.forEach((d,i)=>{const dc=VCOLORS[d.sc]||VCOLORS.u;
-      const cn=d.nameCn&&d.nameCn!==d.name?d.nameCn+' ':'';
-      h+=`<div class="cl-item" data-idx="${i}"><div class="cl-dot" style="background:${dc};box-shadow:0 0 3px ${dc}"></div><div><div class="cl-name">${cn}<small>${d.name}</small></div><div class="cl-sub">${d.typeCn} · ${d.statusCn}</div></div></div>`;
+      const cn=isZhCl&&d.nameCn&&d.nameCn!==d.name?d.nameCn+' ':'';
+      const subTxt=isZhCl?`${d.typeCn} · ${d.statusCn}`:`${d.type} · ${d.statusEn}`;
+      h+=`<div class="cl-item" data-idx="${i}"><div class="cl-dot" style="background:${dc};box-shadow:0 0 3px ${dc}"></div><div><div class="cl-name">${cn}<small>${d.name}</small></div><div class="cl-sub">${subTxt}</div></div></div>`;
     });
     h+=`<div id="cl-detail"></div>`;
     clusterEl.innerHTML=h;posEl(clusterEl,mx,my);
@@ -265,8 +270,8 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
       item.addEventListener('mouseenter',()=>{
         const d=clusterData[parseInt(item.dataset.idx)];if(!d)return;
         const det=document.getElementById('cl-detail');const dc=VCOLORS[d.sc]||VCOLORS.u;
-        const nm=d.nameCn&&d.nameCn!==d.name?`<div class="tip-name-cn">${d.nameCn}</div><div class="tip-name-en">${d.name}</div>`:`<div class="tip-name-cn">${d.name}</div>`;
         const isZh = getLang() === 'zh';
+        const nm=d.nameCn&&d.nameCn!==d.name?(isZh?`<div class="tip-name-cn">${d.nameCn}</div><div class="tip-name-en">${d.name}</div>`:`<div class="tip-name-cn">${d.name}</div><div class="tip-name-en">${d.nameCn}</div>`):`<div class="tip-name-cn">${d.name}</div>`;
         const typeTxt = isZh ? `${d.typeCn}（${d.type}）` : `${d.type}`;
         const statusTxt = isZh ? `${d.statusCn}（${d.statusEn}）` : `${d.statusEn}`;
         const eruptTxt = isZh ? (d.lastEruptCn||t('v.unknown')) : (d.lastErupt||t('v.unknown'));
@@ -363,6 +368,17 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
   lightboxEl.addEventListener('click', e => {
     if (e.target === lightboxEl || e.target.id === 'lightbox-close') {
       lightboxEl.classList.remove('show');
+    }
+  });
+
+  /* Refresh pinned tooltip on language change */
+  window.addEventListener('langchange', () => {
+    if (pinnedSprite) {
+      const d = pinnedSprite.userData;
+      const photos = getPhotosForVolcano(d.name);
+      pinnedPhotoIdx = 0;
+      tooltipEl.innerHTML = tipHTML(d);
+      bindPhotoEvents(photos);
     }
   });
 
