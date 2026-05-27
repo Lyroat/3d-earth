@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { t } from '../../i18n/lang.js';
 
 const BOUNDARY_R = 1.003; // 边界线离地球表面的高度（1=贴地表，越大越高）
 
@@ -62,7 +63,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
     splitActive = !splitActive;
     splitDir = splitActive ? 1 : -1;
     deps.splitBtn.classList.toggle('active', splitActive);
-    deps.splitBtn.textContent = splitActive ? '🔄 合并板块' : '🔄 拆分板块';
+    deps.splitBtn.textContent = splitActive ? t('p.mergePlates') : t('p.splitPlates');
     if(splitActive){
       splitParent.visible = true;
       deps.setAutoRotate(false);
@@ -81,7 +82,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
     splitParent.visible = false;
     if(deps.splitBtn){
       deps.splitBtn.classList.remove('active');
-      deps.splitBtn.textContent = '🔄 拆分板块';
+      deps.splitBtn.textContent = t('p.splitPlates');
     }
     if(earthMat) earthMat.uniforms.uOpacity.value = 1;
     for(const g of Object.values(splitGroups)){

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { t } from '../i18n/lang.js';
 
 export function init({ scene, camera, controls, renderer, TILT, resolution, allLineMats }) {
   const semGroup = new THREE.Group();
@@ -135,7 +136,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     autumn: Math.PI,
     winter: 3 * Math.PI / 2
   };
-  const seasonNames = { spring: '北分点', summer: '南至点', autumn: '南分点', winter: '北至点' }; // 分至点中文名
+  function getSeasonName(key) { const map={spring:'sem3d.spring',summer:'sem3d.summer',autumn:'sem3d.autumn',winter:'sem3d.winter'}; return t(map[key]); }
   const seasonColors = { spring: '#44cc66', summer: '#66aaff', autumn: '#cc8844', winter: '#ffaa22' }; // 分至点标记颜色
 
   const seasonMarkers = {};
@@ -149,7 +150,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     dot.position.set(x, 0, z);
     semGroup.add(dot);
 
-    const lbl = makeSEMLabel(seasonNames[key], seasonColors[key], 1.0); // 分至点标签大小1.0
+    const lbl = makeSEMLabel(getSeasonName(key), seasonColors[key], 1.0); // 分至点标签大小1.0
     lbl.position.set(x, 0.6, z); // 标签悬浮高度0.6
     semGroup.add(lbl);
 
@@ -330,7 +331,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
       semPauseBtn.addEventListener('click', () => {
         semPaused = !semPaused;
         semSpeed = semPaused ? 0 : parseFloat(speedSlider.value);
-        semPauseBtn.textContent = semPaused ? '\u25B6 继续' : '\u23F8 暂停';
+        semPauseBtn.textContent = semPaused ? t('sem.resume') : t('sem.pause');
         semPauseBtn.classList.toggle('active', semPaused);
       });
     }

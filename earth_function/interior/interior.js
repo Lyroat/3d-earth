@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { t, getLang } from '../../i18n/lang.js';
 
 // 地球各层配置：name=中文名, rOuter/rInner=外/内归一化半径(1.0=地表), color=颜色, depth=深度, temp=温度, comp=成分, state=物态
 const LAYERS = [
@@ -14,19 +15,9 @@ const LAYERS = [
   {name:'内核',nameEn:'Inner Core',rOuter:0.192,rInner:0.0,color:0xFFD700,depth:'5150~6371 km',temp:'5000~6000°C',comp:'固态铁镍合金',state:'固态（极高压）'}
 ];
 
-const KC_DATA_INTERIOR = {
-  'crust':{title:'地壳',desc:'<p>地球最外层的固体外壳，是人类直接生活和活动的部分。</p><div class="kc-subtitle">关键特征</div><ul><li>厚度不均：大陆地壳约 30–70 千米，海洋地壳约 5–10 千米</li><li>主要成分：硅酸盐矿物（如长石、石英）</li><li>密度较低，是地球最"轻"的一层</li><li>与上地幔顶部共同构成岩石圈</li></ul>'},
-  'mantle':{title:'地幔',desc:'<p>位于地壳与地核之间的厚层结构，占地球体积约84%。</p><div class="kc-subtitle">关键特征</div><ul><li>深度范围：35–2900 千米处</li><li>主要成分：富含镁和铁的硅酸盐矿物（如橄榄石）</li><li>上地幔部分存在软流圈，具有塑性，可缓慢流动</li><li>是地幔对流的发生区域，驱动板块运动</li></ul>'},
-  'core':{title:'地核',desc:'<p>地球最内部的结构，主要由金属组成。</p><div class="kc-subtitle">关键特征</div><ul><li>分为：外核（液态）和内核（固态）</li><li>主要成分：铁、镍</li><li>外核流动形成地磁场</li><li>温度极高，可达 5000℃ 以上</li></ul>'},
-  'lithosphere':{title:'岩石圈',desc:'<p>地球最外层的刚性层，由地壳和上地幔最顶部组成。</p><div class="kc-subtitle">关键特征</div><ul><li>厚度：约 100 千米（海、陆变化较大）</li><li>被分割成多个板块</li><li>具有刚性，整体作为"板块"运动</li></ul>'},
-  'upper-mantle':{title:'上地幔',desc:'<p>位于地壳之下，是地球内部最上层的地幔区域。</p><div class="kc-subtitle">关键特征</div><ul><li>深度范围：约从地壳底部延伸至约 660 千米深的位置</li><li>主要成分：富含镁、铁的硅酸盐矿物（以橄榄石为主）</li><li>温度和压力随深度增加而升高</li><li>是地幔对流的重要起始区域，直接驱动板块运动</li></ul>'},
-  'astheno':{title:'软流圈',desc:'<p>位于岩石圈之下的上地幔部分，具有塑性和流动性。</p><div class="kc-subtitle">关键特征</div><ul><li>深度范围：100–350 千米处</li><li>温度接近岩石熔点</li><li>不是液体，但可以缓慢流动</li><li>为板块运动提供"滑动基础"</li></ul>'},
-  'litho-mantle':{title:'岩石圈地幔',desc:'<p>上地幔最顶部的部分，属于刚性结构（岩石圈）的一部分。</p><div class="kc-subtitle">关键特征</div><ul><li>与地壳共同组成岩石圈</li><li>物质组成：以橄榄石矿物为主的超镁铁质岩石</li><li>具有刚性，不易流动</li><li>会随板块整体运动</li><li>与下方的软流圈在力学性质上明显不同</li></ul>'},
-  'transition':{title:'过渡带',desc:'<p>上地幔与下地幔之间的过渡区域。</p><div class="kc-subtitle">关键特征</div><ul><li>深度范围：410–660 千米处</li><li>主要特征：矿物发生高压相变（如橄榄石转变为更致密结构）</li><li>密度和地震波速度发生明显变化</li><li>对地幔对流起"阻挡或调节"作用（部分物质可穿越）</li></ul>'},
-  'lower-mantle':{title:'下地幔',desc:'<p>位于过渡带之下、外核之上的地幔部分。</p><div class="kc-subtitle">关键特征</div><ul><li>深度范围：660–2900 千米处</li><li>压力和温度极高</li><li>物质仍为固态，但可发生极缓慢流动</li><li>是深部地幔对流的重要区域</li><li>成分更加致密（如钙钛矿结构矿物）</li></ul>'},
-  'outer-core':{title:'外核',desc:'<p>地核的外层，为液态金属层。</p><div class="kc-subtitle">关键特征</div><ul><li>厚度：约 2270 千米</li><li>主要成分：液态铁、镍</li><li>可以流动，是地磁场产生的根本原因（地磁发电机机制）</li><li>横波无法通过（证明其为液态）</li></ul>'},
-  'inner-core':{title:'内核',desc:'<p>地球最中心的部分，为固态金属球体。</p><div class="kc-subtitle">关键特征</div><ul><li>半径：约 1216 千米</li><li>主要成分：铁、镍</li><li>温度极高，但因压力极大而保持固态</li><li>可能存在各向异性（地震波传播速度方向不同）</li></ul>'},
-};
+function getKcInterior(key) {
+  return { title: t('kc.'+key+'.title'), desc: t('kc.'+key+'.desc') };
+}
 
 // 各层聚焦时的归一化半径范围（min~max），用于截面Shader高亮对应区域
 const LAYER_RANGES = {
@@ -231,7 +222,7 @@ void main(){
     const knee=new THREE.Vector3(kneeX, cfg.labelY, 0);
     const to=new THREE.Vector3(LABEL_X, cfg.labelY, 0);
     makeLeaderLine([from,knee,to]);
-    makeLabelSprite(L.name,new THREE.Vector3(LABEL_X+0.30, cfg.labelY, 0),L);
+    makeLabelSprite(getLang()==='zh' ? L.name : L.nameEn, new THREE.Vector3(LABEL_X+0.30, cfg.labelY, 0),L);
   });
 
   /* Interior mode toggle */
@@ -288,8 +279,7 @@ void main(){
     csMat.uniforms.uFocusMode.value=1.0;
     btns.forEach(b=>b.classList.toggle('active',b.dataset.layer===key));
     updateLabelVisibility(range);
-    const kc=KC_DATA_INTERIOR[key];
-    if(kc) deps.showKC(kc); else deps.hideKC();
+    deps.showKC(getKcInterior(key));
   }
 
   layerPanel.querySelectorAll('.lp-btn').forEach(btn=>{

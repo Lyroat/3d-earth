@@ -11,11 +11,11 @@
 
 <!-- ══ 底部按钮栏：恢复/暂停/模式切换 ══ -->
 <div id="bottom-bar">
-  <button class="tb-btn" id="reset-view-btn" title="恢复初始状态">↺ 恢复初始</button>
-  <button class="tb-btn" id="reset-pos-btn" title="位置复原">⊙ 位置复原</button>
-  <button id="pause-btn" title="暂停/继续自转">⏸</button>
-  <button class="tb-btn" id="tb-earth">🌏 地球</button>
-  <button class="tb-btn" id="tb-sem">☀️ 日-地-月系统</button>
+  <button class="tb-btn" id="reset-view-btn" title="恢复初始状态" data-i18n="ui.resetView" data-i18n-title="ui.resetViewTitle">↺ 恢复初始</button>
+  <button class="tb-btn" id="reset-pos-btn" title="位置复原" data-i18n="ui.resetPos" data-i18n-title="ui.resetPosTitle">⊙ 位置复原</button>
+  <button id="pause-btn" title="暂停/继续自转" data-i18n-title="ui.pauseTitle">⏸</button>
+  <button class="tb-btn" id="tb-earth" data-i18n="ui.earth">🌏 地球</button>
+  <button class="tb-btn" id="tb-sem" data-i18n="ui.sem">☀️ 日-地-月系统</button>
 </div>
 
 <div id="tooltip"></div>
@@ -25,49 +25,49 @@
 <div class="side-panel" id="earth-panel">
   <!-- 内容显示 -->
   <div class="sp-section">
-    <div class="sp-title">内容显示</div>
+    <div class="sp-title" data-i18n="ui.display">内容显示</div>
     <div class="sp-grid">
-      <button class="chip" id="ep-terrain">🏔 显示地形</button>
-      <button class="chip" id="ep-show-plates">🌍 显示板块</button>
-      <button class="chip" id="ep-show-volcano">🌋 显示火山</button>
+      <button class="chip" id="ep-terrain" data-i18n="ui.terrain">🏔 显示地形</button>
+      <button class="chip" id="ep-show-plates" data-i18n="ui.showPlates">🌍 显示板块</button>
+      <button class="chip" id="ep-show-volcano" data-i18n="ui.showVolcano">🌋 显示火山</button>
     </div>
   </div>
   <!-- 地球探索 -->
   <div class="sp-section">
-    <div class="sp-title">地球探索</div>
-    <button class="chip ep-explore-btn" id="ep-plates">🌍 地球板块</button>
+    <div class="sp-title" data-i18n="ui.explore">地球探索</div>
+    <button class="chip ep-explore-btn" id="ep-plates" data-i18n="ui.tectonicPlates">🌍 地球板块</button>
     <div class="ep-sub" id="plates-sub">
       <div id="split-section"></div>
-      <div class="ep-sub-title">板块导航</div>
+      <div class="ep-sub-title" data-i18n="ui.plateNav">板块导航</div>
       <div class="sp-grid sp-scroll" id="plate-grid"></div>
-      <div class="ep-sub-title">板块边界</div>
+      <div class="ep-sub-title" data-i18n="ui.plateBoundary">板块边界</div>
       <div class="sp-grid" id="boundary-grid"></div>
     </div>
-    <button class="chip ep-explore-btn" id="ep-volcano">🌋 火山分布</button>
+    <button class="chip ep-explore-btn" id="ep-volcano" data-i18n="ui.volcanoDistrib">🌋 火山分布</button>
     <div class="ep-sub" id="volcano-sub">
-      <div class="ep-sub-title">火山类型</div>
+      <div class="ep-sub-title" data-i18n="ui.volcanoType">火山类型</div>
       <div class="sp-grid" id="volcano-grid"></div>
       <div class="sp-search">
-        <input type="text" id="volcano-search" placeholder="搜索火山" autocomplete="off" size="1" />
+        <input type="text" id="volcano-search" placeholder="搜索火山" data-i18n="ui.searchVolcano" autocomplete="off" size="1" />
         <div id="search-results"></div>
       </div>
     </div>
-    <button class="chip ep-explore-btn" id="ep-interior">🌐 地球内部</button>
+    <button class="chip ep-explore-btn" id="ep-interior" data-i18n="ui.interior">🌐 地球内部</button>
     <div class="ep-sub" id="interior-sub">
-      <button class="lp-btn" data-layer="crust"><span class="lp-dot" style="background:#8B4513"></span>地壳</button>
-      <button class="lp-btn" data-layer="mantle"><span class="lp-dot" style="background:#CC4400"></span>地幔</button>
-      <button class="lp-btn indent" data-layer="upper-mantle"><span class="lp-dot" style="background:#E65C00"></span>上地幔</button>
-      <button class="lp-btn indent2" data-layer="litho-mantle"><span class="lp-dot" style="background:#556B2F"></span>岩石圈地幔</button>
-      <button class="lp-btn indent2" data-layer="astheno"><span class="lp-dot" style="background:#CC4400"></span>软流圈</button>
-      <button class="lp-btn indent2" data-layer="transition"><span class="lp-dot" style="background:#E65C00"></span>过渡带</button>
-      <button class="lp-btn indent" data-layer="lower-mantle"><span class="lp-dot" style="background:#B22222"></span>下地幔</button>
-      <button class="lp-btn" data-layer="core"><span class="lp-dot" style="background:#FF8C00"></span>地核</button>
-      <button class="lp-btn indent" data-layer="outer-core"><span class="lp-dot" style="background:#FF8C00"></span>外核</button>
-      <button class="lp-btn indent" data-layer="inner-core"><span class="lp-dot" style="background:#FFD700"></span>内核</button>
-      <button class="lp-btn" data-layer="lithosphere"><span class="lp-dot" style="background:#556B2F"></span>岩石圈</button>
-      <button class="lp-reset" id="lp-reset">↻ 显示全部</button>
+      <button class="lp-btn" data-layer="crust"><span class="lp-dot" style="background:#8B4513"></span><span data-i18n="layer.crust">地壳</span></button>
+      <button class="lp-btn" data-layer="mantle"><span class="lp-dot" style="background:#CC4400"></span><span data-i18n="layer.mantle">地幔</span></button>
+      <button class="lp-btn indent" data-layer="upper-mantle"><span class="lp-dot" style="background:#E65C00"></span><span data-i18n="layer.upperMantle">上地幔</span></button>
+      <button class="lp-btn indent2" data-layer="litho-mantle"><span class="lp-dot" style="background:#556B2F"></span><span data-i18n="layer.lithoMantle">岩石圈地幔</span></button>
+      <button class="lp-btn indent2" data-layer="astheno"><span class="lp-dot" style="background:#CC4400"></span><span data-i18n="layer.astheno">软流圈</span></button>
+      <button class="lp-btn indent2" data-layer="transition"><span class="lp-dot" style="background:#E65C00"></span><span data-i18n="layer.transition">过渡带</span></button>
+      <button class="lp-btn indent" data-layer="lower-mantle"><span class="lp-dot" style="background:#B22222"></span><span data-i18n="layer.lowerMantle">下地幔</span></button>
+      <button class="lp-btn" data-layer="core"><span class="lp-dot" style="background:#FF8C00"></span><span data-i18n="layer.core">地核</span></button>
+      <button class="lp-btn indent" data-layer="outer-core"><span class="lp-dot" style="background:#FF8C00"></span><span data-i18n="layer.outerCore">外核</span></button>
+      <button class="lp-btn indent" data-layer="inner-core"><span class="lp-dot" style="background:#FFD700"></span><span data-i18n="layer.innerCore">内核</span></button>
+      <button class="lp-btn" data-layer="lithosphere"><span class="lp-dot" style="background:#556B2F"></span><span data-i18n="layer.lithosphere">岩石圈</span></button>
+      <button class="lp-reset" id="lp-reset" data-i18n="ui.showAll">↻ 显示全部</button>
     </div>
-    <button class="chip ep-explore-btn" id="ep-magnetic">🧲 地球磁场</button>
+    <button class="chip ep-explore-btn" id="ep-magnetic" data-i18n="ui.magnetic">🧲 地球磁场</button>
   </div>
 </div>
 
@@ -83,27 +83,27 @@
 <div id="sem-kc-stack"></div>
 
 <!-- ══ 火山照片上传触发按钮 ══ -->
-<button id="upload-trigger">📸 上传照片</button>
+<button id="upload-trigger" data-i18n="ui.uploadPhoto">📸 上传照片</button>
 
 <!-- ══ 照片上传弹窗 ══ -->
 <div id="upload-modal">
   <div class="upload-content">
     <button class="kc-close" id="upload-close">&times;</button>
-    <div class="upload-title">上传火山照片</div>
+    <div class="upload-title" data-i18n="ui.uploadTitle">上传火山照片</div>
     <div class="upload-volcano" id="upload-volcano-name"></div>
     <label class="upload-file-label">
-      <span>选择照片</span>
+      <span data-i18n="ui.choosePhoto">选择照片</span>
       <input type="file" id="upload-file" accept="image/*" />
     </label>
     <div id="cropper-container"><img id="cropper-img" /></div>
-    <input type="text" id="uploader-id" placeholder="你的昵称 / ID" autocomplete="off" />
+    <input type="text" id="uploader-id" placeholder="你的昵称 / ID" data-i18n="ui.nickname" autocomplete="off" />
     <div class="upload-date-row">
       <input type="date" id="taken-date" />
       <input type="time" id="taken-time" />
     </div>
-    <input type="text" id="photo-desc" placeholder="照片描述（不超过30字）" maxlength="30" autocomplete="off" />
-    <label class="upload-cc"><input type="checkbox" id="cc-check" /> 我同意以 CC BY 4.0 协议授权本照片</label>
-    <button class="upload-btn" id="upload-submit">上传</button>
+    <input type="text" id="photo-desc" placeholder="照片描述（不超过30字）" data-i18n="ui.photoDesc" maxlength="30" autocomplete="off" />
+    <label class="upload-cc"><input type="checkbox" id="cc-check" /> <span data-i18n="ui.ccAgree">我同意以 CC BY 4.0 协议授权本照片</span></label>
+    <button class="upload-btn" id="upload-submit" data-i18n="ui.upload">上传</button>
     <div id="upload-status"></div>
   </div>
 </div>
@@ -111,43 +111,43 @@
 <!-- ══ 日-地-月系统面板 ══ -->
 <div class="side-panel" id="sem-panel">
   <div class="sp-section">
-    <div class="sp-title">日-地-月系统</div>
+    <div class="sp-title" data-i18n="sem.title">日-地-月系统</div>
     <div class="sem-control">
-      <label class="sem-label">速度</label>
+      <label class="sem-label" data-i18n="sem.speed">速度</label>
       <span id="sem-speed-val" class="sem-val">1.0×</span>
-      <button class="chip" id="sem-pause">⏸ 暂停</button>
+      <button class="chip" id="sem-pause" data-i18n="sem.pause">⏸ 暂停</button>
     </div>
     <div class="sem-control">
       <input type="range" id="sem-speed" min="0" max="5" step="0.1" value="1" class="sem-slider sem-slider-short" />
     </div>
   </div>
   <div class="sp-section">
-    <div class="sp-title">观察模式</div>
+    <div class="sp-title" data-i18n="sem.viewMode">观察模式</div>
     <div class="sem-control">
-      <button class="chip" id="sem-view-orbit">🌏 公转</button>
-      <button class="chip" id="sem-view-rotate">🔄 自转</button>
+      <button class="chip" id="sem-view-orbit" data-i18n="sem.revolution">🌏 公转</button>
+      <button class="chip" id="sem-view-rotate" data-i18n="sem.rotation">🔄 自转</button>
     </div>
     <div class="sem-control">
-      <button class="chip" id="sem-focus-sun">☀️ 太阳中心</button>
-      <button class="chip" id="sem-focus-earth">🌍 地球中心</button>
-    </div>
-  </div>
-  <div class="sp-section">
-    <div class="sp-title">分至点位</div>
-    <div class="sem-control">
-      <button class="chip" id="sem-spring">🌱 北分点</button>
-      <button class="chip" id="sem-summer">☀️ 北至点</button>
-    </div>
-    <div class="sem-control">
-      <button class="chip" id="sem-autumn">🍂 南分点</button>
-      <button class="chip" id="sem-winter">❄️ 南至点</button>
+      <button class="chip" id="sem-focus-sun" data-i18n="sem.sunCenter">☀️ 太阳中心</button>
+      <button class="chip" id="sem-focus-earth" data-i18n="sem.earthCenter">🌍 地球中心</button>
     </div>
   </div>
   <div class="sp-section">
-    <div class="sp-title">标注与轨道</div>
+    <div class="sp-title" data-i18n="sem.solsticeEquinox">分至点位</div>
     <div class="sem-control">
-      <button class="chip" id="sem-toggle-labels">🏷 标注</button>
-      <button class="chip" id="sem-toggle-orbits">⭕ 轨道线</button>
+      <button class="chip" id="sem-spring" data-i18n="sem.spring">🌱 北分点</button>
+      <button class="chip" id="sem-summer" data-i18n="sem.summer">☀️ 北至点</button>
+    </div>
+    <div class="sem-control">
+      <button class="chip" id="sem-autumn" data-i18n="sem.autumn">🍂 南分点</button>
+      <button class="chip" id="sem-winter" data-i18n="sem.winter">❄️ 南至点</button>
+    </div>
+  </div>
+  <div class="sp-section">
+    <div class="sp-title" data-i18n="sem.labelsOrbits">标注与轨道</div>
+    <div class="sem-control">
+      <button class="chip" id="sem-toggle-labels" data-i18n="sem.labels">🏷 标注</button>
+      <button class="chip" id="sem-toggle-orbits" data-i18n="sem.orbits">⭕ 轨道线</button>
     </div>
   </div>
 </div>
@@ -158,6 +158,7 @@
   <img id="lightbox-img" />
 </div>
 
+<button id="lang-toggle" data-i18n="lang.toggle">EN</button>
 <script type="module" src="app.js"></script>
 </body>
 </html>

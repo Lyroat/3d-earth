@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { t } from '../../i18n/lang.js';
 
 /* ================================================================
    IGRF-14 (epoch 2025.0) Gauss coefficients, l_max = 6
@@ -288,12 +289,12 @@ export function init({ scene, TILT, resolution, allLineMats }) {
   }
 
   const [nlx,nly,nlz] = sph2xyz(1.32, mnTh, mnPh);
-  const nLbl = makeLabel('地磁北极','#4488ff', 320, 80, 44); // 磁极标签：蓝色，320×80画布，44px字号
+  const nLbl = makeLabel(t('mag.north'),'#4488ff', 320, 80, 44); // 磁极标签：蓝色，320×80画布，44px字号
   nLbl.scale.set(0.8, 0.2, 1); nLbl.position.set(nlx, nly, nlz);
   magneticGroup.add(nLbl);
 
   const [slx,sly,slz] = sph2xyz(1.32, msTh, msPh);
-  const sLbl = makeLabel('地磁南极','#ff4444', 320, 80, 44); // 磁极标签：红色，320×80画布，44px字号
+  const sLbl = makeLabel(t('mag.south'),'#ff4444', 320, 80, 44); // 磁极标签：红色，320×80画布，44px字号
   sLbl.scale.set(0.8, 0.2, 1); sLbl.position.set(slx, sly, slz);
   magneticGroup.add(sLbl);
 

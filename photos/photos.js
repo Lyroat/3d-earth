@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
+import { t } from '../i18n/lang.js';
 
 const SUPABASE_URL = 'https://kbighainzawljrmtxolw.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_URGP-MtGqxHPysh7LlvB1A_fFX4B-PT';
@@ -116,12 +117,12 @@ export function initUploadModal() {
   });
 
   submitBtn.addEventListener('click', async () => {
-    if (!cropper)            { statusEl.textContent = '请先选择照片'; return; }
-    if (!nameInput.value.trim()) { statusEl.textContent = '请填写上传者 ID'; return; }
-    if (!ccCheck.checked)    { statusEl.textContent = '请同意版权声明'; return; }
+    if (!cropper)            { statusEl.textContent = t('photo.selectFirst'); return; }
+    if (!nameInput.value.trim()) { statusEl.textContent = t('photo.enterId'); return; }
+    if (!ccCheck.checked)    { statusEl.textContent = t('photo.agreeCc'); return; }
 
     submitBtn.disabled = true;
-    statusEl.textContent = '上传中…';
+    statusEl.textContent = t('photo.uploading');
 
     try {
       const canvas = cropper.getCroppedCanvas({ width: 1800, height: 1200, imageSmoothingQuality: 'high' });
@@ -129,10 +130,10 @@ export function initUploadModal() {
       let takenDate = dateInput.value || null;
       if (takenDate && timeInput.value) takenDate += ' ' + timeInput.value;
       await uploadPhoto(currentVolcanoId, nameInput.value.trim(), blob, takenDate, descInput.value.trim() || null);
-      statusEl.textContent = '上传成功！照片将在审核通过后显示。';
+      statusEl.textContent = t('photo.success');
       setTimeout(closeModal, 2000);
     } catch (err) {
-      statusEl.textContent = '上传失败：' + (err.message || '未知错误');
+      statusEl.textContent = t('photo.failPrefix') + (err.message || t('photo.unknownErr'));
     } finally {
       submitBtn.disabled = false;
     }

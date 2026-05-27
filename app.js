@@ -1,4 +1,5 @@
 import './guard.js';
+import { t, getLang, setLang, updateDOM } from './i18n/lang.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -410,37 +411,21 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
   document.getElementById('ep-magnetic').addEventListener('click', () => openExplore('magnetic'));
 
   /* ══════════ SEM science cards ══════════ */
-  const semScienceData = {
-    'sem-view-orbit': {
-      title: '地球公转',
-      desc: '<p>地球沿近似圆形的椭圆轨道绕太阳运行，轨道半长轴约 1.496 亿千米（1 AU）。</p><p class="kc-subtitle">基本参数</p><ul><li>公转周期：365.25 天（1 恒星年）</li><li>轨道偏心率：0.0167（近似正圆）</li><li>公转速度：约 29.8 km/s</li><li>轨道倾角：与黄道面重合（定义为 0°）</li></ul><p class="kc-subtitle">季节成因</p><ul><li>地轴倾斜 23.4° 是四季形成的根本原因</li><li>公转使太阳直射点在南北回归线间移动</li></ul>'
-    },
-    'sem-view-rotate': {
-      title: '地球自转',
-      desc: '<p>地球绕自身轴线旋转，自转轴与公转轨道面（黄道面）成 66.6° 夹角，即地轴倾斜 23.4°。</p><p class="kc-subtitle">基本参数</p><ul><li>自转周期：23 小时 56 分 4 秒（1 恒星日）</li><li>太阳日：24 小时</li><li>赤道线速度：约 465 m/s</li><li>自转方向：自西向东（从北极上方看逆时针）</li></ul><p class="kc-subtitle">效应</p><ul><li>昼夜交替：地球自转产生白天和黑夜的循环</li><li>科里奥利力：影响大气和海洋环流方向</li></ul>'
-    },
-    'sem-spring': {
-      title: '北分点（春分）',
-      desc: '<p>太阳直射赤道，全球昼夜几乎等长。</p><p class="kc-subtitle">特点</p><ul><li>日期：约 3 月 20-21 日</li><li>太阳直射点：赤道（0°）</li><li>北半球：春季开始，白昼逐渐变长</li><li>南半球：秋季开始，白昼逐渐变短</li></ul>'
-    },
-    'sem-summer': {
-      title: '北至点（夏至）',
-      desc: '<p>太阳直射北回归线，北半球白昼最长。</p><p class="kc-subtitle">特点</p><ul><li>日期：约 6 月 21-22 日</li><li>太阳直射点：北回归线（23.4°N）</li><li>北半球：白昼最长，夏季正式开始</li><li>南半球：白昼最短，冬季正式开始</li><li>北极圈内：极昼现象</li><li>南极圈内：极夜现象</li></ul>'
-    },
-    'sem-autumn': {
-      title: '南分点（秋分）',
-      desc: '<p>太阳再次直射赤道，全球昼夜几乎等长。</p><p class="kc-subtitle">特点</p><ul><li>日期：约 9 月 22-23 日</li><li>太阳直射点：赤道（0°）</li><li>北半球：秋季开始，白昼逐渐变短</li><li>南半球：春季开始，白昼逐渐变长</li></ul>'
-    },
-    'sem-winter': {
-      title: '南至点（冬至）',
-      desc: '<p>太阳直射南回归线，北半球白昼最短。</p><p class="kc-subtitle">特点</p><ul><li>日期：约 12 月 21-22 日</li><li>太阳直射点：南回归线（23.4°S）</li><li>北半球：白昼最短，冬季正式开始</li><li>南半球：白昼最长，夏季正式开始</li><li>北极圈内：极夜现象</li><li>南极圈内：极昼现象</li></ul>'
-    }
-  };
+  function getSemScienceData() {
+    return {
+      'sem-view-orbit': { title: t('kc.sem-orbit.title'), desc: t('kc.sem-orbit.desc') },
+      'sem-view-rotate': { title: t('kc.sem-rotate.title'), desc: t('kc.sem-rotate.desc') },
+      'sem-spring': { title: t('kc.sem-spring.title'), desc: t('kc.sem-spring.desc') },
+      'sem-summer': { title: t('kc.sem-summer.title'), desc: t('kc.sem-summer.desc') },
+      'sem-autumn': { title: t('kc.sem-autumn.title'), desc: t('kc.sem-autumn.desc') },
+      'sem-winter': { title: t('kc.sem-winter.title'), desc: t('kc.sem-winter.desc') },
+    };
+  }
 
-  Object.entries(semScienceData).forEach(([btnId, data]) => {
+  Object.keys(getSemScienceData()).forEach(btnId => {
     const btn = document.getElementById(btnId);
     if(btn) {
-      btn.addEventListener('click', () => toggleSemKC(btnId, data));
+      btn.addEventListener('click', () => toggleSemKC(btnId, getSemScienceData()[btnId]));
     }
   });
 
@@ -509,6 +494,16 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     renderer.setSize(innerWidth,innerHeight);resolution.set(innerWidth,innerHeight);
     allLineMats.forEach(m=>m.resolution.copy(resolution));
   });
+
+  /* ══════════ Language Toggle ══════════ */
+  const langToggle = document.getElementById('lang-toggle');
+  if (langToggle) {
+    langToggle.addEventListener('click', () => {
+      setLang(getLang() === 'zh' ? 'en' : 'zh');
+      langToggle.textContent = t('lang.toggle');
+    });
+  }
+  updateDOM();
 
   /* ══════════ Animate ══════════ */
   // 同步所有叠加层的旋转角度与地球一致
