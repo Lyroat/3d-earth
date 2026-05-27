@@ -63,7 +63,8 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
     splitActive = !splitActive;
     splitDir = splitActive ? 1 : -1;
     deps.splitBtn.classList.toggle('active', splitActive);
-    deps.splitBtn.textContent = splitActive ? t('p.mergePlates') : t('p.splitPlates');
+    const sk = splitActive ? 'p.mergePlates' : 'p.splitPlates';
+    deps.splitBtn.dataset.i18n = sk; deps.splitBtn.textContent = t(sk);
     if(splitActive){
       splitParent.visible = true;
       deps.setAutoRotate(false);
@@ -82,7 +83,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
     splitParent.visible = false;
     if(deps.splitBtn){
       deps.splitBtn.classList.remove('active');
-      deps.splitBtn.textContent = t('p.splitPlates');
+      deps.splitBtn.dataset.i18n = 'p.splitPlates'; deps.splitBtn.textContent = t('p.splitPlates');
     }
     if(earthMat) earthMat.uniforms.uOpacity.value = 1;
     for(const g of Object.values(splitGroups)){

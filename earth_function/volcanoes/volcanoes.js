@@ -49,7 +49,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
 
   [{s:'a',c:'#DC143C',lk:'v.active'},{s:'d',c:'#FFA500',lk:'v.dormant'},{s:'e',c:'#B0C4DE',lk:'v.extinct'}].forEach(o => {
     const btn=document.createElement('div');btn.className='chip';btn.dataset.status=o.s;
-    btn.innerHTML=`<span class="cdot" style="background:${o.c};box-shadow:0 0 4px ${o.c}"></span>${t(o.lk)} <small>${vCounts[o.s]||0}</small>`;
+    btn.innerHTML=`<span class="cdot" style="background:${o.c};box-shadow:0 0 4px ${o.c}"></span><span data-i18n="${o.lk}">${t(o.lk)}</span> <small>${vCounts[o.s]||0}</small>`;
     btn.addEventListener('click',e => {
       e.stopPropagation();
       if(activeVFilter===o.s){

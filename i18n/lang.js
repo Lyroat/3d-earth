@@ -386,6 +386,7 @@ export function setLang(lang) {
   currentLang = lang;
   localStorage.setItem('lang', lang);
   updateDOM();
+  window.dispatchEvent(new Event('langchange'));
 }
 
 export function updateDOM() {

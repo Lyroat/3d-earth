@@ -76,7 +76,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
 
   [{t:'c',c:'#ff4444',lk:'b.convergentChip'},{t:'d',c:'#44ff88',lk:'b.divergentChip'},{t:'t',c:'#ffcc33',lk:'b.transformChip'}].forEach(o => {
     const btn=document.createElement('div');btn.className='chip';btn.dataset.btype=o.t;
-    btn.innerHTML=`<span class="cline" style="background:${o.c};box-shadow:0 0 4px ${o.c}"></span>${t(o.lk)}`;
+    btn.innerHTML=`<span class="cline" style="background:${o.c};box-shadow:0 0 4px ${o.c}"></span><span data-i18n="${o.lk}">${t(o.lk)}</span>`;
     btn.addEventListener('click',e => {
       e.stopPropagation();
       if(deps.getSplitActive()) deps.forceCompleteSplit();
@@ -107,7 +107,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
   }
 
   PLATES.forEach(pl => {
-    const btn=document.createElement('button');btn.className='chip';btn.textContent=t(pl.nameKey);
+    const btn=document.createElement('button');btn.className='chip';btn.dataset.i18n=pl.nameKey;btn.textContent=t(pl.nameKey);
     btn.addEventListener('click',e => {
       e.stopPropagation();
       if(deps.getSplitActive()) deps.forceCompleteSplit();
@@ -128,7 +128,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
     pGrid.appendChild(btn);
   });
 
-  const splitBtn=document.createElement('button');splitBtn.id='split-btn';splitBtn.textContent=t('p.splitPlates');
+  const splitBtn=document.createElement('button');splitBtn.id='split-btn';splitBtn.dataset.i18n='p.splitPlates';splitBtn.textContent=t('p.splitPlates');
   splitBtn.addEventListener('click',e=>{e.stopPropagation();deps.toggleSplit();});
   document.getElementById('split-section').appendChild(splitBtn);
 
