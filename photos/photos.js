@@ -64,6 +64,7 @@ export function initUploadModal() {
   const cropImg  = document.getElementById('cropper-img');
   const nameInput = document.getElementById('uploader-id');
   const dateInput = document.getElementById('taken-date');
+  const timeInput = document.getElementById('taken-time');
   const descInput = document.getElementById('photo-desc');
   const ccCheck  = document.getElementById('cc-check');
   const submitBtn = document.getElementById('upload-submit');
@@ -80,6 +81,7 @@ export function initUploadModal() {
     fileInput.value = '';
     nameInput.value = '';
     dateInput.value = '';
+    timeInput.value = '';
     descInput.value = '';
     ccCheck.checked = false;
     statusEl.textContent = '';
@@ -124,7 +126,9 @@ export function initUploadModal() {
     try {
       const canvas = cropper.getCroppedCanvas({ width: 1800, height: 1200, imageSmoothingQuality: 'high' });
       const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
-      await uploadPhoto(currentVolcanoId, nameInput.value.trim(), blob, dateInput.value || null, descInput.value.trim() || null);
+      let takenDate = dateInput.value || null;
+      if (takenDate && timeInput.value) takenDate += ' ' + timeInput.value;
+      await uploadPhoto(currentVolcanoId, nameInput.value.trim(), blob, takenDate, descInput.value.trim() || null);
       statusEl.textContent = '上传成功！照片将在审核通过后显示。';
       setTimeout(closeModal, 2000);
     } catch (err) {

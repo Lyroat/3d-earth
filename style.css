@@ -175,10 +175,12 @@ canvas{display:block}
 .upload-file-label input{display:none}
 #cropper-container{display:none;max-height:50vh;overflow:hidden;border-radius:8px}
 #cropper-img{max-width:100%;display:block}
-#uploader-id,#taken-date,#photo-desc{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:13px;padding:8px 12px;outline:none;font-family:inherit}
-#uploader-id:focus,#taken-date:focus,#photo-desc:focus{border-color:rgba(77,195,247,.5)}
+#uploader-id,#taken-date,#taken-time,#photo-desc{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:13px;padding:8px 12px;outline:none;font-family:inherit}
+#uploader-id:focus,#taken-date:focus,#taken-time:focus,#photo-desc:focus{border-color:rgba(77,195,247,.5)}
 #uploader-id::placeholder,#photo-desc::placeholder{color:rgba(255,255,255,.3)}
-#taken-date{color-scheme:dark}
+.upload-date-row{display:flex;gap:8px}
+.upload-date-row input{flex:1;min-width:0}
+#taken-date,#taken-time{color-scheme:dark}
 #photo-desc{resize:none}
 .upload-cc{font-size:11px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:6px;cursor:pointer}
 .upload-cc input{accent-color:#4fc3f7}
