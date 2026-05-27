@@ -145,6 +145,10 @@ canvas{display:block}
 .tip-photo img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
 .tip-desc{font-size:10px;color:rgba(255,255,255,.6);padding:4px 0 0;line-height:1.4}
 .tip-credit{font-size:9px;color:rgba(255,255,255,.35);padding:3px 0 0}
+.tip-photo-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:4px 0 0}
+.tip-nav-btn{background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);font-size:16px;width:24px;height:24px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;line-height:1;padding:0}
+.tip-nav-btn:hover{background:rgba(255,255,255,.25);color:#fff}
+.tip-nav-idx{font-size:10px;color:rgba(255,255,255,.4)}
 #tooltip.pinned{pointer-events:auto}
 #tooltip.pinned .tip-photo img{cursor:pointer;transition:opacity .15s}
 #tooltip.pinned .tip-photo img:hover{opacity:.85}

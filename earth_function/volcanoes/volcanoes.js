@@ -81,8 +81,11 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     uploadTrigger.dataset.volcanoId = sp.userData.name;
     uploadTrigger.dataset.volcanoName = sp.userData.nameCn || sp.userData.name;
   }
+  let pinnedPhotoIdx = 0;
+
   function pinTooltip(sp){
     pinnedSprite = sp;
+    pinnedPhotoIdx = 0;
     const d = sp.userData;
     const photos = getPhotosForVolcano(d.name);
     tooltipEl.innerHTML = tipHTML(d);
@@ -90,11 +93,30 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     tooltipEl.style.maxWidth = photos.length > 0 ? '280px' : '';
     tooltipEl.classList.add('pinned');
     tooltipEl.style.display = 'block';
+    bindPhotoEvents(photos);
+  }
+
+  function bindPhotoEvents(photos) {
     const photoImg = tooltipEl.querySelector('.tip-photo img');
     if (photoImg) {
       photoImg.addEventListener('click', () => {
         lightboxImg.src = photoImg.src;
         lightboxEl.classList.add('show');
+      });
+    }
+    if (photos.length > 1) {
+      tooltipEl.querySelectorAll('.tip-nav-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const dir = parseInt(btn.dataset.dir);
+          pinnedPhotoIdx = (pinnedPhotoIdx + dir + photos.length) % photos.length;
+          const photoEl = tooltipEl.querySelector('.tip-photo');
+          const nav = photoEl.querySelector('.tip-photo-nav');
+          const p = photos[pinnedPhotoIdx];
+          photoEl.innerHTML = photoSlideHTML(p) + nav.outerHTML;
+          photoEl.querySelector('.tip-nav-idx').textContent = `${pinnedPhotoIdx + 1} / ${photos.length}`;
+          bindPhotoEvents(photos);
+        });
       });
     }
   }
@@ -188,6 +210,12 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     return{x:(v.x+1)/2*innerWidth,y:(-v.y+1)/2*innerHeight,z:v.z};
   }
 
+  function photoSlideHTML(p) {
+    const descLine = p.description ? `<div class="tip-desc">${p.description}</div>` : '';
+    const datePart = p.taken_date ? ` · ${p.taken_date}` : '';
+    return `<img src="${getPhotoUrl(p.image_path)}" />${descLine}<div class="tip-credit">📷 ${p.uploader_id}${datePart} · CC BY 4.0</div>`;
+  }
+
   function tipHTML(d){
     const dc=VCOLORS[d.sc]||VCOLORS.u;
     const nameLine = d.nameCn&&d.nameCn!==d.name
@@ -196,10 +224,10 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     const photos = getPhotosForVolcano(d.name);
     let photoHtml = '';
     if (photos.length > 0) {
-      const p = photos[0];
-      const descLine = p.description ? `<div class="tip-desc">${p.description}</div>` : '';
-      const datePart = p.taken_date ? ` · ${p.taken_date}` : '';
-      photoHtml = `<div class="tip-photo"><img src="${getPhotoUrl(p.image_path)}" />${descLine}<div class="tip-credit">📷 ${p.uploader_id}${datePart} · CC BY 4.0</div></div>`;
+      const nav = photos.length > 1
+        ? `<div class="tip-photo-nav"><button class="tip-nav-btn" data-dir="-1">‹</button><span class="tip-nav-idx">1 / ${photos.length}</span><button class="tip-nav-btn" data-dir="1">›</button></div>`
+        : '';
+      photoHtml = `<div class="tip-photo" data-total="${photos.length}">${photoSlideHTML(photos[0])}${nav}</div>`;
     }
     return `${nameLine}<div class="tip-sep"></div>
 <div class="tip-row"><span class="tip-label">类型</span><span class="tip-val">${d.typeCn}（${d.type}）</span></div>
