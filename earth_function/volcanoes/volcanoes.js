@@ -291,6 +291,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
 
   function handlePointerMove(e){
     if(clusterHovered || pinnedSprite) return;
+    if(!volcanoGroup.visible && !(deps.boundaryGroup && deps.boundaryGroup.visible)){return;}
     const barEl=document.getElementById('bottom-bar');
     const barRect=barEl.getBoundingClientRect();
     const overBar=e.clientY>=barRect.top;

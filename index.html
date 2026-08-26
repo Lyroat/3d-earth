@@ -30,6 +30,7 @@
       <button class="chip" id="ep-terrain" data-i18n="ui.terrain">🏔 显示地形</button>
       <button class="chip" id="ep-show-plates" data-i18n="ui.showPlates">🌍 显示板块</button>
       <button class="chip" id="ep-show-volcano" data-i18n="ui.showVolcano">🌋 显示火山</button>
+      <button class="chip" id="ep-show-earthquake" data-i18n="ui.showEarthquake">📍 显示地震</button>
     </div>
   </div>
   <!-- 地球探索 -->
@@ -51,6 +52,21 @@
         <input type="text" id="volcano-search" placeholder="搜索火山" data-i18n="ui.searchVolcano" autocomplete="off" size="1" />
         <div id="search-results"></div>
       </div>
+    </div>
+    <button class="chip ep-explore-btn" id="ep-earthquake" data-i18n="ui.earthquakeDistrib">📍 地震分布</button>
+    <div class="ep-sub" id="earthquake-sub">
+      <div class="ep-sub-title" data-i18n="ui.earthquakeMag">震级划分</div>
+      <div class="sp-grid" id="earthquake-grid"></div>
+      <div class="eq-year-row" id="eq-year-row">
+        <input type="number" id="eq-year-start" min="1900" max="2026" placeholder="起始年份" data-i18n="eq.fromYear" autocomplete="off" />
+        <span class="eq-year-sep">至</span>
+        <input type="number" id="eq-year-end" min="1900" max="2026" placeholder="终止年份" data-i18n="eq.toYear" autocomplete="off" />
+      </div>
+      <div class="eq-loading" id="eq-loading" style="display:none">
+        <div class="eq-spinner"></div>
+        <span data-i18n="eq.loading">加载中…</span>
+      </div>
+      <div class="eq-time-hint" id="eq-time-hint"></div>
     </div>
     <button class="chip ep-explore-btn" id="ep-interior" data-i18n="ui.interior">🌐 地球内部</button>
     <div class="ep-sub" id="interior-sub">

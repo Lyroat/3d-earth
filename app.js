@@ -10,6 +10,7 @@ import { init as initPlates } from './earth_function/plates/plates.js';
 import { init as initSplit } from './earth_function/plates/split.js';
 import { init as initVolcanoes } from './earth_function/volcanoes/volcanoes.js';
 import { init as initInterior } from './earth_function/interior/interior.js';
+import { init as initEarthquakes } from './earth_function/earthquakes/earthquakes.js';
 import { loadApprovedPhotos, initUploadModal } from './photos/photos.js';
 
 /* ══════════ Scene — 场景、相机、渲染器初始化 ══════════ */
@@ -70,6 +71,7 @@ function toggleMagnetic(){
     if(interior && interior.interiorMode) interior.toggleInterior();
     if(boundaryGroup) boundaryGroup.visible = false;
     if(volcanoGroup) volcanoGroup.visible = false;
+    if(earthquakeGroup) earthquakeGroup.visible = false;
     gridGroup.visible = false;
     earthMat.uniforms.uOpacity.value = 0.35; // 磁场模式下地球透明度（0=全透明，1=不透明）
     earthMat.depthWrite = false;
@@ -88,8 +90,8 @@ function closeAllPanels(){
 }
 
 /* ══════════ Accordion helpers ══════════ */
-const SUB_IDS = ['plates-sub', 'volcano-sub', 'interior-sub'];
-const EXPLORE_BTN_IDS = ['ep-plates', 'ep-volcano', 'ep-interior', 'ep-magnetic'];
+const SUB_IDS = ['plates-sub', 'volcano-sub', 'earthquake-sub', 'interior-sub'];
+const EXPLORE_BTN_IDS = ['ep-plates', 'ep-volcano', 'ep-earthquake', 'ep-interior', 'ep-magnetic'];
 
 function closeAllSubs(){
   SUB_IDS.forEach(id => document.getElementById(id).classList.remove('show'));
@@ -108,11 +110,13 @@ function resetEarthState(){
   if(magneticMode) toggleMagnetic();
   if(boundaryGroup) boundaryGroup.visible = false;
   if(volcanoGroup) volcanoGroup.visible = false;
+  if(earthquakeGroup) earthquakeGroup.visible = false;
   gridGroup.visible = false;
   earthMat.uniforms.uBumpScale.value = 0.0; // 地形凹凸强度（0=平滑，值越大地形越凸显）
   document.getElementById('ep-terrain').classList.remove('active');
   document.getElementById('ep-show-plates').classList.remove('active');
   document.getElementById('ep-show-volcano').classList.remove('active');
+  document.getElementById('ep-show-earthquake').classList.remove('active');
 }
 
 function autoMergeSplit(){
@@ -234,18 +238,20 @@ const sharedDeps = {
 };
 
 /* Async module init */
-let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
+let boundaryGroup, volcanoGroup, earthquakeGroup, plates, split, volcano, earthquake, interior;
 
 (async function bootstrap(){
-  [plates, split, volcano, interior] = await Promise.all([
+  [plates, split, volcano, earthquake, interior] = await Promise.all([
     initPlates(ctx, sharedDeps),
     initSplit(ctx, sharedDeps),
     initVolcanoes(ctx, sharedDeps),
+    initEarthquakes(ctx, sharedDeps),
     Promise.resolve(initInterior(ctx, sharedDeps)),
   ]);
 
   boundaryGroup = plates.boundaryGroup;
   volcanoGroup = volcano.volcanoGroup;
+  earthquakeGroup = earthquake.earthquakeGroup;
 
   /* ══════════ Photos: load approved & wire upload button ══════════ */
   loadApprovedPhotos();
@@ -257,6 +263,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
   /* ══════════ Initial state: hide boundaries & volcanoes ══════════ */
   boundaryGroup.visible = false;
   volcanoGroup.visible = false;
+  earthquakeGroup.visible = false;
   gridGroup.visible = false;
 
   /* Wire up SEM deps */
@@ -268,6 +275,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     toggleMagnetic,
     setActivePanel: (v) => { activePanel = v; },
     earth, boundaryGroup, volcanoGroup: volcano.volcanoGroup,
+    earthquakeGroup: earthquake.earthquakeGroup,
     gridGroup, magneticGroup,
     splitParent: split.splitParent,
     setAutoRotate: (v) => { autoRotate = v; },
@@ -348,6 +356,14 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     volcanoGroup.visible = active;
   });
 
+  document.getElementById('ep-show-earthquake').addEventListener('click', () => {
+    autoMergeSplit();
+    const btn = document.getElementById('ep-show-earthquake');
+    const active = btn.classList.toggle('active');
+    earthquakeGroup.visible = active;
+    if (active) earthquake.loadDefault();
+  });
+
   /* ══════════ 地球探索 section (accordion) ══════════ */
   function openExplore(key){
     autoMergeSplit();
@@ -364,6 +380,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     if(isActive) {
       if(key === 'plates'){ boundaryGroup.visible = false; gridGroup.visible = false; document.getElementById('ep-show-plates').classList.remove('active'); }
       if(key === 'volcano'){ volcanoGroup.visible = false; document.getElementById('ep-show-volcano').classList.remove('active'); }
+      if(key === 'earthquake'){ earthquakeGroup.visible = false; document.getElementById('ep-show-earthquake').classList.remove('active'); }
       if(key === 'interior') interior.toggleInterior();
       return;
     }
@@ -375,38 +392,54 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
       boundaryGroup.visible = true;
       gridGroup.visible = true;
       volcanoGroup.visible = false;
+      earthquakeGroup.visible = false;
       document.getElementById('ep-show-plates').classList.add('active');
       document.getElementById('ep-show-volcano').classList.remove('active');
+      document.getElementById('ep-show-earthquake').classList.remove('active');
     }
     else if(key === 'volcano'){
       document.getElementById('volcano-sub').classList.add('show');
       volcanoGroup.visible = true;
+      earthquakeGroup.visible = false;
       boundaryGroup.visible = false;
       gridGroup.visible = false;
       document.getElementById('ep-show-volcano').classList.add('active');
       document.getElementById('ep-show-plates').classList.remove('active');
+      document.getElementById('ep-show-earthquake').classList.remove('active');
+    }
+    else if(key === 'earthquake'){
+      document.getElementById('earthquake-sub').classList.add('show');
+      earthquakeGroup.visible = true;
+      volcanoGroup.visible = false;
+      document.getElementById('ep-show-earthquake').classList.add('active');
+      document.getElementById('ep-show-volcano').classList.remove('active');
     }
     else if(key === 'interior'){
       document.getElementById('interior-sub').classList.add('show');
       interior.toggleInterior();
       boundaryGroup.visible = false;
       volcanoGroup.visible = false;
+      earthquakeGroup.visible = false;
       gridGroup.visible = false;
       document.getElementById('ep-show-plates').classList.remove('active');
       document.getElementById('ep-show-volcano').classList.remove('active');
+      document.getElementById('ep-show-earthquake').classList.remove('active');
     }
     else if(key === 'magnetic'){
       toggleMagnetic();
       boundaryGroup.visible = false;
       volcanoGroup.visible = false;
+      earthquakeGroup.visible = false;
       gridGroup.visible = false;
       document.getElementById('ep-show-plates').classList.remove('active');
       document.getElementById('ep-show-volcano').classList.remove('active');
+      document.getElementById('ep-show-earthquake').classList.remove('active');
     }
   }
 
   document.getElementById('ep-plates').addEventListener('click', () => openExplore('plates'));
   document.getElementById('ep-volcano').addEventListener('click', () => openExplore('volcano'));
+  document.getElementById('ep-earthquake').addEventListener('click', () => openExplore('earthquake'));
   document.getElementById('ep-interior').addEventListener('click', () => openExplore('interior'));
   document.getElementById('ep-magnetic').addEventListener('click', () => openExplore('magnetic'));
 
@@ -510,6 +543,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
   function syncRotY(){
     boundaryGroup.rotation.y = earth.rotation.y;
     volcano.volcanoGroup.rotation.y = earth.rotation.y;
+    earthquake.earthquakeGroup.rotation.y = earth.rotation.y;
     gridGroup.rotation.y = earth.rotation.y;
     split.splitParent.rotation.y = earth.rotation.y;
     magneticGroup.rotation.y = earth.rotation.y;
@@ -540,6 +574,7 @@ let boundaryGroup, volcanoGroup, plates, split, volcano, interior;
     split.updateSplit(earthMat, boundaryGroup);
     volcano.updatePulse(t);
     volcano.updatePinned();
+    earthquake.updatePulse(t);
     interior.updateTime(t);
     semMod.updateSEM(0.016);
     earthMat.uniforms.uCam.value.copy(camera.position);

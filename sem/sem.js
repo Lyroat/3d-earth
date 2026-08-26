@@ -172,6 +172,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
       deps.earth.visible = false;
       deps.boundaryGroup.visible = false;
       deps.volcanoGroup.visible = false;
+      if(deps.earthquakeGroup) deps.earthquakeGroup.visible = false;
       deps.gridGroup.visible = false;
       deps.magneticGroup.visible = false;
       deps.splitParent.visible = false;
