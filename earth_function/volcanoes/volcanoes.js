@@ -302,6 +302,7 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     raycaster.setFromCamera(mouse,camera);
     if(deps.interiorHover(raycaster,e.clientX,e.clientY)){clusterEl.style.display='none';return;}
     const eDist=earthDist(raycaster);
+    let handled=false;
     if(volcanoGroup.visible){
       const vis=volcanoSprites.filter(s=>s.visible&&isVisible(s));
       const vHits=raycaster.intersectObjects(vis).filter(h=>h.distance<eDist+0.01&&isVisible(h.object));
@@ -327,7 +328,10 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
       }
       if(closest){tooltipEl.textContent=closest.userData.label;posEl(tooltipEl,e.clientX,e.clientY);document.body.style.cursor='pointer';return;}
     }
-    tooltipEl.style.display='none';document.body.style.cursor='default';
+    if(volcanoGroup.visible || deps.boundaryGroup.visible){
+      if(deps.earthquakeHover(raycaster,e.clientX,e.clientY)) return;
+      tooltipEl.style.display='none';document.body.style.cursor='default';
+    }
   }
 
   renderer.domElement.addEventListener('pointermove', handlePointerMove);

@@ -227,6 +227,7 @@ const sharedDeps = {
   toggleSplit: () => split && split.toggleSplit(),
   forceCompleteSplit: () => { if(split && split.splitActive){ split.toggleSplit(); split.forceComplete(earthMat); } },
   interiorHover: (rc,x,y) => interior ? interior.interiorHover(rc,x,y) : false,
+  earthquakeHover: (rc,x,y) => earthquake ? earthquake.earthquakeHover(rc,x,y) : false,
   closeAllPanels,
   setActivePanel: (v) => { activePanel = v; },
   setAutoRotate: (v) => { autoRotate = v; },

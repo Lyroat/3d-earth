@@ -229,35 +229,22 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     return hits.length > 0 ? hits[0].distance : Infinity;
   }
 
-  function handlePointerMove(e) {
-    if (!earthquakeGroup.visible || earthquakeSprites.length === 0) return;
-    if (deps.getSplitActive && deps.getSplitActive()) return;
-    if (deps.getInteriorMode && deps.getInteriorMode()) return;
-
-    const barEl = document.getElementById('bottom-bar');
-    if (e.clientY >= barEl.getBoundingClientRect().top) { tooltipEl.style.display = 'none'; return; }
-    const panel = document.querySelector('.side-panel.show');
-    if (panel && e.clientX <= panel.getBoundingClientRect().right) { tooltipEl.style.display = 'none'; return; }
-
-    mouse.x = (e.clientX / innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-
-    const eDist = earthDist(raycaster);
+  function earthquakeHover(rc, x, y) {
+    if (!earthquakeGroup.visible || earthquakeSprites.length === 0) return false;
+    const eDist = earthDist(rc);
     const vis = earthquakeSprites.filter(s => s.visible && isVisible(s));
-    const hits = raycaster.intersectObjects(vis).filter(h => h.distance < eDist + 0.01);
-
+    const hits = rc.intersectObjects(vis).filter(h => h.distance < eDist + 0.01);
     if (hits.length > 0) {
       const d = hits[0].object.userData;
       tooltipEl.innerHTML = eqTipHTML(d);
       tooltipEl.style.display = 'block';
-      posEl(tooltipEl, e.clientX, e.clientY);
-    } else {
-      tooltipEl.style.display = 'none';
+      tooltipEl.style.whiteSpace = 'nowrap';
+      tooltipEl.style.maxWidth = '';
+      posEl(tooltipEl, x, y);
+      return true;
     }
+    return false;
   }
-
-  renderer.domElement.addEventListener('pointermove', handlePointerMove);
 
   /* ── Pulse Animation ── */
   function updatePulse(t) {
@@ -308,5 +295,5 @@ export async function init({ scene, camera, renderer, TILT, lngLatToVec3 }, deps
     }
   }
 
-  return { earthquakeGroup, updatePulse, clearMarkers, loadDefault };
+  return { earthquakeGroup, updatePulse, clearMarkers, loadDefault, earthquakeHover };
 }
