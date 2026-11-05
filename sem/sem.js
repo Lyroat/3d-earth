@@ -4,7 +4,7 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { t } from '../i18n/lang.js';
 
-export function init({ scene, camera, controls, renderer, TILT, resolution, allLineMats }) {
+export function init({ scene, camera, controls, renderer, TILT, resolution, allLineMats, lngLatToVec3 }) {
   const semGroup = new THREE.Group();
   semGroup.visible = false;
   scene.add(semGroup);
@@ -15,8 +15,13 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   let semMoonMonth = 0;
   let semShowLabels = true;
   let semShowOrbits = true;
+  let semShowSunlight = true;
   let viewMode = 'orbit';
   let focusTarget = 'sun';
+  const earthFocusOffset = new THREE.Vector3(0.8, 0.4, -0.8);
+  const earthFocusUp = new THREE.Vector3(0, 1, 0);
+  let lastEarthFocusOrbitAngle = null;
+  let earthFocusInteracting = false;
 
   /* 日地月尺寸配置：太阳半径2.0、地球轨道半径18、地球半径0.35、月球轨道半径1.2、月球半径0.095 */
   const SEM_SCALE = {
@@ -113,17 +118,118 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   axMesh.rotation.x = TILT;
   earthTiltGroup.add(axMesh);
 
+  /* ======== Latitude reference lines ======== */
+  // 这些标线与地球表面保持同心，并随地球一起自转、公转。
+  const latitudeGroup = new THREE.Group();
+  latitudeGroup.renderOrder = 2;
+  // 挂在地球网格本体上，确保标线与地球贴图同步自转。
+  semEarthMesh.add(latitudeGroup);
+
+  function makeLatitudeRing(latitude, color, opacity, linewidth) {
+    const pts = [];
+    const radius = SEM_SCALE.earthR * 1.018; // 略高于表面，避免与贴图发生闪烁
+    for (let i = 0; i <= 256; i++) {
+      const lng = -180 + (i / 256) * 360;
+      const v = lngLatToVec3(lng, latitude, radius);
+      pts.push(v.x, v.y, v.z);
+    }
+    const geo = new LineGeometry();
+    geo.setPositions(pts);
+    const mat = new LineMaterial({
+      color,
+      linewidth,
+      transparent: true,
+      opacity,
+      resolution,
+      depthWrite: false,
+    });
+    const line = new Line2(geo, mat);
+    line.computeLineDistances();
+    latitudeGroup.add(line);
+    allLineMats.push(mat);
+    return line;
+  }
+
+  const latitudeDefinitions = [
+    { key: 'equator', latitude: 0, color: 0x78aeb7, opacity: 0.9, linewidth: 2.0 },
+    { key: 'tropicCancer', latitude: 23.4, color: 0xb4a37a, opacity: 0.86, linewidth: 1.7 },
+    { key: 'tropicCapricorn', latitude: -23.4, color: 0xb4a37a, opacity: 0.86, linewidth: 1.7 },
+    { key: 'arcticCircle', latitude: 66.5, color: 0xa89aa7, opacity: 0.86, linewidth: 1.7 },
+    { key: 'antarcticCircle', latitude: -66.5, color: 0xa89aa7, opacity: 0.86, linewidth: 1.7 },
+  ];
+
+  const latitudeLabels = [];
+
+  function makeLatitudeLabel(definition) {
+    const cv = document.createElement('canvas');
+    cv.width = 512;
+    cv.height = 96;
+    const draw = (text) => {
+      const labelCtx = cv.getContext('2d');
+      labelCtx.clearRect(0, 0, cv.width, cv.height);
+      const fontSize = Math.min(36, Math.max(22, Math.floor(480 / Math.max(text.length, 1))));
+      labelCtx.font = `bold ${fontSize}px PingFang SC,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif`;
+      labelCtx.fillStyle = definition.labelColor;
+      labelCtx.textAlign = 'center';
+      labelCtx.textBaseline = 'middle';
+      labelCtx.fillText(text, cv.width / 2, cv.height / 2);
+    };
+
+    draw(t(`sem.${definition.key}`));
+    const tex = new THREE.CanvasTexture(cv);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    }));
+    const labelSize = 0.38;
+    sprite.scale.set(labelSize, labelSize * 0.19, 1);
+    const labelPos = lngLatToVec3(-90, definition.latitude, SEM_SCALE.earthR * 1.08);
+    sprite.position.copy(labelPos);
+    latitudeGroup.add(sprite);
+    latitudeLabels.push(sprite);
+
+    sprite.userData.updateText = () => {
+      draw(t(`sem.${definition.key}`));
+      tex.needsUpdate = true;
+    };
+  }
+
+  latitudeDefinitions.forEach(definition => {
+    makeLatitudeRing(
+      definition.latitude,
+      definition.color,
+      definition.opacity,
+      definition.linewidth
+    );
+    definition.labelColor = `#${definition.color.toString(16).padStart(6, '0')}`;
+    makeLatitudeLabel(definition);
+  });
+
+  window.addEventListener('langchange', () => {
+    latitudeLabels.forEach(label => label.userData.updateText());
+  });
+
   /* ======== Labels ======== */
   function makeSEMLabel(text, color, size) {
     const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
     const ctx = cv.getContext('2d');
-    ctx.font = 'bold 36px PingFang SC,sans-serif';
-    ctx.fillStyle = color || '#ffffff';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(text, 128, 32);
+    function drawLabel(labelText) {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      ctx.font = 'bold 36px PingFang SC,sans-serif';
+      ctx.fillStyle = color || '#ffffff';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(labelText, 128, 32);
+    }
+    drawLabel(text);
     const tex = new THREE.CanvasTexture(cv);
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
     sp.scale.set(size || 1.5, (size || 1.5) * 0.25, 1);
+    sp.userData.setText = labelText => {
+      drawLabel(labelText);
+      tex.needsUpdate = true;
+    };
     return sp;
   }
 
@@ -155,6 +261,101 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     semGroup.add(lbl);
 
     seasonMarkers[key] = { angle, dot, lbl };
+  });
+
+  /* ======== Sunlight ray & direct-sun point ======== */
+  const sunBeamOuter = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.055, 0.14, 1, 20, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: 0xe2c98f,
+      transparent: true,
+      opacity: 0.075,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+    })
+  );
+  const sunBeamCore = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018, 0.035, 1, 16, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: 0xf0dca8,
+      transparent: true,
+      opacity: 0.18,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+    })
+  );
+  semGroup.add(sunBeamOuter, sunBeamCore);
+
+  const directPoint = new THREE.Mesh(
+    new THREE.SphereGeometry(0.026, 16, 16),
+    new THREE.MeshBasicMaterial({
+      color: 0xf0dca8,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+    })
+  );
+  const directPointRing = new THREE.Mesh(
+    new THREE.RingGeometry(0.045, 0.075, 32),
+    new THREE.MeshBasicMaterial({
+      color: 0xe2c98f,
+      transparent: true,
+      opacity: 0.72,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+    })
+  );
+  semEarthMesh.add(directPoint, directPointRing);
+  const sunlightVisuals = [sunBeamOuter, sunBeamCore, directPoint, directPointRing];
+
+  const worldEarthPos = new THREE.Vector3();
+  const worldSunPos = new THREE.Vector3();
+  const worldToSun = new THREE.Vector3();
+  const localToSun = new THREE.Vector3();
+  const beamStart = new THREE.Vector3();
+  const beamEnd = new THREE.Vector3();
+  const beamDirection = new THREE.Vector3();
+  const beamMidpoint = new THREE.Vector3();
+  const yAxis = new THREE.Vector3(0, 1, 0);
+  const zAxis = new THREE.Vector3(0, 0, 1);
+  const inverseEarthQuaternion = new THREE.Quaternion();
+  const inverseGroupQuaternion = new THREE.Quaternion();
+
+  function updateSunlightVisuals() {
+    semEarthMesh.getWorldPosition(worldEarthPos);
+    sunMesh.getWorldPosition(worldSunPos);
+
+    worldToSun.copy(worldSunPos).sub(worldEarthPos).normalize();
+    inverseEarthQuaternion.copy(semEarthMesh.getWorldQuaternion(inverseEarthQuaternion)).invert();
+    localToSun.copy(worldToSun).applyQuaternion(inverseEarthQuaternion).normalize();
+
+    const pointRadius = SEM_SCALE.earthR * 1.018;
+    directPoint.position.copy(localToSun).multiplyScalar(pointRadius);
+    directPointRing.position.copy(localToSun).multiplyScalar(SEM_SCALE.earthR * 1.024);
+    directPointRing.quaternion.setFromUnitVectors(zAxis, localToSun);
+
+    beamStart.copy(worldSunPos).addScaledVector(worldToSun, -SEM_SCALE.sunR * 0.96);
+    beamEnd.copy(worldEarthPos).addScaledVector(worldToSun, SEM_SCALE.earthR * 1.018);
+    beamDirection.copy(beamEnd).sub(beamStart);
+    const beamLength = beamDirection.length();
+    beamDirection.normalize();
+    beamMidpoint.copy(beamStart).add(beamEnd).multiplyScalar(0.5);
+
+    inverseGroupQuaternion.copy(semGroup.getWorldQuaternion(inverseGroupQuaternion)).invert();
+    const localBeamDirection = beamDirection.clone().applyQuaternion(inverseGroupQuaternion).normalize();
+    const localBeamMidpoint = semGroup.worldToLocal(beamMidpoint.clone());
+    [sunBeamOuter, sunBeamCore].forEach(beam => {
+      beam.position.copy(localBeamMidpoint);
+      beam.quaternion.setFromUnitVectors(yAxis, localBeamDirection);
+      beam.scale.set(1, beamLength, 1);
+    });
+  }
+
+  window.addEventListener('langchange', () => {
+    Object.entries(seasonMarkers).forEach(([key, marker]) => marker.lbl.userData.setText(getSeasonName(key)));
   });
 
   /* ======== Toggle SEM mode ======== */
@@ -237,12 +438,18 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
       controls.update();
     } else if (target === 'earth') {
       controls.minDistance = 0.5;
-      controls.maxDistance = 5;
-      const ep = getEarthWorldPos();
-      controls.target.copy(ep);
-      camera.position.set(ep.x + 0.8, ep.y + 0.4, ep.z + 0.8);
-      camera.lookAt(ep);
-      controls.update();
+      if (viewMode === 'orbit') {
+        // 地球中心的公转视角仍需允许拉远，才能看到太阳和完整轨道。
+        controls.maxDistance = 60;
+        setEarthFocusView();
+      } else {
+        controls.maxDistance = 5;
+        const ep = getEarthWorldPos();
+        controls.target.copy(ep);
+        camera.position.set(ep.x + 1.5, ep.y + 0.5, ep.z + 1.5);
+        camera.lookAt(ep);
+        controls.update();
+      }
     }
   }
 
@@ -252,19 +459,64 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     return pos;
   }
 
+  function setEarthFocusView() {
+    const ep = getEarthWorldPos();
+    const offset = earthFocusOffset.clone().applyAxisAngle(
+      earthFocusUp,
+      earthOrbitPivot.rotation.y
+    );
+    controls.target.copy(ep);
+    camera.position.copy(ep).add(offset);
+    camera.lookAt(ep);
+    controls.update();
+    lastEarthFocusOrbitAngle = earthOrbitPivot.rotation.y;
+  }
+
+  function reanchorEarthFocusView() {
+    const ep = getEarthWorldPos();
+    // 交互期间不让公转把镜头往前推；结束交互时只平移观察中心，
+    // 保留用户刚刚调整好的距离和旋转角度。
+    const offset = camera.position.clone().sub(controls.target);
+    controls.target.copy(ep);
+    camera.position.copy(ep).add(offset);
+    camera.lookAt(ep);
+    controls.update();
+    lastEarthFocusOrbitAngle = earthOrbitPivot.rotation.y;
+  }
+
+  function followEarthFocusView() {
+    const currentAngle = earthOrbitPivot.rotation.y;
+    if (lastEarthFocusOrbitAngle === null) {
+      setEarthFocusView();
+      return;
+    }
+
+    let delta = currentAngle - lastEarthFocusOrbitAngle;
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+
+    const ep = getEarthWorldPos();
+    // 鼠标按住/拖拽期间也继续跟随地球公转；
+    // 只旋转当前相机相对地球的偏移量，不重置距离和用户视角，
+    // 因此既不会停在原地，也不会把镜头向前推进。
+    const offset = camera.position.clone().sub(controls.target);
+    offset.applyAxisAngle(earthFocusUp, delta);
+    controls.target.copy(ep);
+    camera.position.copy(ep).add(offset);
+    controls.update();
+    lastEarthFocusOrbitAngle = currentAngle;
+  }
+
   function moveToSeason(key) {
     const angle = seasonAngles[key];
     semEarthYear = angle;
     semMoonMonth = angle * (365.25 / 27.32);
     earthOrbitPivot.rotation.y = semEarthYear;
     moonOrbitPivot.rotation.y = semMoonMonth;
-    if (viewMode === 'rotate') {
-      const ep = getEarthWorldPos();
-      controls.target.copy(ep);
-      camera.position.set(ep.x + 1.5, ep.y + 0.5, ep.z + 1.5);
-      camera.lookAt(ep);
-      controls.update();
+    if (focusTarget === 'earth' && viewMode === 'orbit') {
+      setEarthFocusView();
     }
+    updateSunlightVisuals();
   }
 
   /* ======== Update ======== */
@@ -288,16 +540,29 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     sunMesh.rotation.y += 0.002 * semSpeed; // 太阳自转速度
 
     if (focusTarget === 'earth' && viewMode !== 'rotate') {
-      const ep = getEarthWorldPos();
-      controls.target.lerp(ep, 0.08);
+      followEarthFocusView();
     }
 
     Object.values(seasonMarkers).forEach(m => { m.lbl.visible = semShowLabels; });
+    latitudeGroup.visible = semShowLabels;
+    latitudeLabels.forEach(label => { label.visible = semShowLabels; });
+    sunlightVisuals.forEach(object => { object.visible = semShowSunlight; });
+    updateSunlightVisuals();
     earthOrbitLine.visible = semShowOrbits;
     moonOrbitLine.visible = semShowOrbits;
   }
 
   /* ======== Controls ======== */
+  controls.addEventListener('start', () => {
+    earthFocusInteracting = true;
+  });
+  controls.addEventListener('end', () => {
+    earthFocusInteracting = false;
+    if (focusTarget === 'earth' && viewMode === 'orbit') {
+      reanchorEarthFocusView();
+    }
+  });
+
   (function initSEMControls() {
     const speedSlider = document.getElementById('sem-speed');
     const speedVal = document.getElementById('sem-speed-val');
@@ -323,6 +588,16 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
       toggleOrbitsBtn.addEventListener('click', () => {
         semShowOrbits = !semShowOrbits;
         toggleOrbitsBtn.classList.toggle('active', semShowOrbits);
+      });
+    }
+
+    const toggleSunlightBtn = document.getElementById('sem-toggle-sunlight');
+    if (toggleSunlightBtn) {
+      toggleSunlightBtn.classList.add('active');
+      toggleSunlightBtn.addEventListener('click', () => {
+        semShowSunlight = !semShowSunlight;
+        toggleSunlightBtn.classList.toggle('active', semShowSunlight);
+        sunlightVisuals.forEach(object => { object.visible = semShowSunlight; });
       });
     }
 

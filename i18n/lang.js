@@ -55,6 +55,12 @@ const zh = {
   'sem.labelsOrbits': '标注与轨道',
   'sem.labels': '🏷 标注',
   'sem.orbits': '⭕ 轨道线',
+  'sem.sunlight': '☀️ 阳光直射',
+  'sem.equator': '赤道',
+  'sem.tropicCancer': '北回归线',
+  'sem.tropicCapricorn': '南回归线',
+  'sem.arcticCircle': '北极圈',
+  'sem.antarcticCircle': '南极圈',
 
   // ── UI: Upload ──
   'ui.uploadPhoto': '📸 上传照片',
@@ -271,6 +277,12 @@ const en = {
   'sem.labelsOrbits': 'Labels & Orbits',
   'sem.labels': '🏷 Labels',
   'sem.orbits': '⭕ Orbits',
+  'sem.sunlight': '☀️ Direct Sunlight',
+  'sem.equator': 'Equator',
+  'sem.tropicCancer': 'Tropic of Cancer',
+  'sem.tropicCapricorn': 'Tropic of Capricorn',
+  'sem.arcticCircle': 'Arctic Circle',
+  'sem.antarcticCircle': 'Antarctic Circle',
 
   // ── UI: Upload ──
   'ui.uploadPhoto': '📸 Upload Photo',
