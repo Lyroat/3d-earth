@@ -74,6 +74,47 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     semEarthMat.needsUpdate = true;
   });
 
+  /* ======== Earth atmosphere glow ======== */
+  // 用一层很薄的淡蓝色 Fresnel 辉光勾勒地球轮廓，让背向太阳的一侧
+  // 不会与黑色宇宙背景融为一体。可视厚度约为 0.008 个场景单位。
+  const earthAtmosphere = new THREE.Mesh(
+    new THREE.SphereGeometry(SEM_SCALE.earthR + 0.008, 64, 64),
+    new THREE.ShaderMaterial({
+      uniforms: {
+        glowColor: { value: new THREE.Color(0x79c9ff) },
+        glowOpacity: { value: 0.46 },
+      },
+      vertexShader: `
+        varying vec3 vWorldNormal;
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPosition.xyz;
+          vWorldNormal = normalize(mat3(modelMatrix) * normal);
+          gl_Position = projectionMatrix * viewMatrix * worldPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 glowColor;
+        uniform float glowOpacity;
+        varying vec3 vWorldNormal;
+        varying vec3 vWorldPosition;
+        void main() {
+          vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+          float edge = 1.0 - abs(dot(normalize(vWorldNormal), viewDirection));
+          float rim = pow(max(edge, 0.0), 2.4);
+          gl_FragColor = vec4(glowColor, rim * glowOpacity);
+        }
+      `,
+      transparent: true,
+      side: THREE.BackSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    })
+  );
+  earthAtmosphere.renderOrder = 1;
+  semEarthMesh.add(earthAtmosphere);
+
   /* ======== Moon ======== */
   const moonOrbitPivot = new THREE.Group();
   moonOrbitPivot.position.set(0, 0, 0);
