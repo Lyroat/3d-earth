@@ -19,9 +19,6 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   let viewMode = 'orbit';
   let focusTarget = 'sun';
   const earthFocusOffset = new THREE.Vector3(0.8, 0.4, -0.8);
-  const earthFocusUp = new THREE.Vector3(0, 1, 0);
-  let lastEarthFocusOrbitAngle = null;
-  let earthFocusInteracting = false;
 
   /* 日地月尺寸配置：太阳半径2.0、地球轨道半径18、地球半径0.35、月球轨道半径1.2、月球半径0.095 */
   const SEM_SCALE = {
@@ -502,50 +499,22 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
 
   function setEarthFocusView() {
     const ep = getEarthWorldPos();
-    const offset = earthFocusOffset.clone().applyAxisAngle(
-      earthFocusUp,
-      earthOrbitPivot.rotation.y
-    );
     controls.target.copy(ep);
-    camera.position.copy(ep).add(offset);
+    // 保持相机偏移量在宇宙坐标系中固定，地球公转时只平移观察中心。
+    // 这样地轴相对屏幕的方向保持不变，太阳可以自然地在视野中移动。
+    camera.position.copy(ep).add(earthFocusOffset);
     camera.lookAt(ep);
     controls.update();
-    lastEarthFocusOrbitAngle = earthOrbitPivot.rotation.y;
-  }
-
-  function reanchorEarthFocusView() {
-    const ep = getEarthWorldPos();
-    // 交互期间不让公转把镜头往前推；结束交互时只平移观察中心，
-    // 保留用户刚刚调整好的距离和旋转角度。
-    const offset = camera.position.clone().sub(controls.target);
-    controls.target.copy(ep);
-    camera.position.copy(ep).add(offset);
-    camera.lookAt(ep);
-    controls.update();
-    lastEarthFocusOrbitAngle = earthOrbitPivot.rotation.y;
   }
 
   function followEarthFocusView() {
-    const currentAngle = earthOrbitPivot.rotation.y;
-    if (lastEarthFocusOrbitAngle === null) {
-      setEarthFocusView();
-      return;
-    }
-
-    let delta = currentAngle - lastEarthFocusOrbitAngle;
-    while (delta > Math.PI) delta -= Math.PI * 2;
-    while (delta < -Math.PI) delta += Math.PI * 2;
-
     const ep = getEarthWorldPos();
-    // 鼠标按住/拖拽期间也继续跟随地球公转；
-    // 只旋转当前相机相对地球的偏移量，不重置距离和用户视角，
-    // 因此既不会停在原地，也不会把镜头向前推进。
+    // 只平移相机和观察目标，不旋转相机偏移量；
+    // 保留用户的缩放、旋转和地轴的固定方向。
     const offset = camera.position.clone().sub(controls.target);
-    offset.applyAxisAngle(earthFocusUp, delta);
     controls.target.copy(ep);
     camera.position.copy(ep).add(offset);
     controls.update();
-    lastEarthFocusOrbitAngle = currentAngle;
   }
 
   function moveToSeason(key) {
@@ -594,16 +563,6 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   }
 
   /* ======== Controls ======== */
-  controls.addEventListener('start', () => {
-    earthFocusInteracting = true;
-  });
-  controls.addEventListener('end', () => {
-    earthFocusInteracting = false;
-    if (focusTarget === 'earth' && viewMode === 'orbit') {
-      reanchorEarthFocusView();
-    }
-  });
-
   (function initSEMControls() {
     const speedSlider = document.getElementById('sem-speed');
     const speedVal = document.getElementById('sem-speed-val');
