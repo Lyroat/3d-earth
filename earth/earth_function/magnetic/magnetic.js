@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { t } from '../../i18n/lang.js';
+import { t } from '../../../i18n/lang.js';
 
 /* ================================================================
    IGRF-14 (epoch 2025.0) Gauss coefficients, l_max = 6

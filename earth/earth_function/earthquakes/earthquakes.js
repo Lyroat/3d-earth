@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { t, getLang } from '../../i18n/lang.js';
+import { t, getLang } from '../../../i18n/lang.js';
 
 const EARTHQUAKE_R = 1.022;
 

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { t } from '../i18n/lang.js';
+import { t } from '../../i18n/lang.js';
 
 export function init({ scene, camera, controls, renderer, TILT, resolution, allLineMats, lngLatToVec3 }) {
   const semGroup = new THREE.Group();
@@ -33,7 +33,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   const sunMesh = new THREE.Mesh(sunGeo, sunMat);
   semGroup.add(sunMesh);
 
-  texLoader.load('sem/sun.jpg', tex => {
+  texLoader.load('Solar_System/textures/sun.jpg', tex => {
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     sunMat.map = tex;
     sunMat.needsUpdate = true;
@@ -65,7 +65,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   semEarthMesh.rotation.x = TILT;
   earthTiltGroup.add(semEarthMesh);
 
-  texLoader.load('earth/earth.jpg', tex => {
+  texLoader.load('earth/main/earth.jpg', tex => {
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     semEarthMat.map = tex;
     semEarthMat.needsUpdate = true;
@@ -127,7 +127,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   semMoonMesh.rotation.y = Math.PI;
   moonOrbitPivot.add(semMoonMesh);
 
-  texLoader.load('sem/moon.jpg', tex => {
+  texLoader.load('Solar_System/textures/moon.jpg', tex => {
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     semMoonMat.map = tex;
     semMoonMat.needsUpdate = true;

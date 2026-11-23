@@ -3,16 +3,16 @@ import { copyFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 
 const STATIC_ASSETS = [
-  'earth/earth.jpg',
-  'earth/bump.jpg',
-  'sem/sun.jpg',
-  'sem/moon.jpg',
-  'earth_function/plates/pb-data.json',
-  'earth_function/plates/split-data.json',
-  'earth_function/plates/textures/汇聚型板块边界.jpg',
-  'earth_function/plates/textures/离散型板块边界.jpg',
-  'earth_function/plates/textures/转换断层.jpg',
-  'earth_function/volcanoes/data.json',
+  'earth/main/earth.jpg',
+  'earth/main/bump.jpg',
+  'Solar_System/textures/sun.jpg',
+  'Solar_System/textures/moon.jpg',
+  'earth/earth_function/plates/pb-data.json',
+  'earth/earth_function/plates/split-data.json',
+  'earth/earth_function/plates/textures/汇聚型板块边界.jpg',
+  'earth/earth_function/plates/textures/离散型板块边界.jpg',
+  'earth/earth_function/plates/textures/转换断层.jpg',
+  'earth/earth_function/volcanoes/data.json',
 ];
 
 export default defineConfig({

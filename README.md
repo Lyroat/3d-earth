@@ -55,7 +55,7 @@
 - 自定义 Shader 渲染截面纹理，模拟真实地质质感
 
 ### ☀️ 日-地-月系统
-- 真实比例的太阳、地球、月球三体系统可视化
+- 太阳、地球、月球三体教学可视化（目前尺寸与距离为便于观察而调整，并非统一真实比例）
 - 地球公转与月球公转联动，支持速度滑块调节
 - 地球自转轴倾斜 23.4°，真实模拟昼夜与季节变化
 - 真实阳光照明：太阳光照射地球和月球产生明暗变化
@@ -88,30 +88,44 @@
 ├── index.html                    # 页面结构（HTML）
 ├── style.css                     # 样式表（CSS）
 ├── app.js                        # 应用主逻辑与 UI 管理
-├── earth/
-│   ├── earth.js                  # 地球渲染模块
-│   ├── earth.jpg                 # 地球表面贴图
-│   └── bump.jpg                  # 凹凸地形贴图
-├── magnetic/
-│   └── magnetic.js               # 地磁场可视化模块（IGRF-14）
-├── plates/
-│   ├── plates.js                 # 板块构造模块
-│   ├── split.js                  # 板块拆分动画
-│   ├── pb-data.json              # 板块边界数据
-│   ├── split-data.json           # 板块拆分轮廓数据
-│   └── textures/                 # 板块边界类型示意图
-├── volcanoes/
-│   └── volcanoes.js              # 火山数据模块
-├── earthquakes/
-│   └── earthquakes.js            # 地震数据模块（USGS API）
-├── interior/
-│   └── interior.js               # 地球内部结构模块
-├── sem/
-│   ├── sem.js                    # 日-地-月系统模块
-│   ├── sun.jpg                   # 太阳表面贴图
-│   └── moon.jpg                  # 月球表面贴图
-└── world_volcanoes.json          # 火山数据（1416 座，含中英文名）
+├── earth/                        # 地球相关内容总目录
+│   ├── main/                     # 地球本体代码与贴图
+│   │   ├── earth.js              # 地球渲染模块
+│   │   ├── earth.jpg             # 地球表面贴图
+│   │   └── bump.jpg              # 凹凸地形贴图
+│   └── earth_function/           # 地球专题功能
+│       ├── magnetic/
+│       │   └── magnetic.js       # 地磁场可视化模块（IGRF-14）
+│       ├── plates/
+│       │   ├── plates.js         # 板块构造模块
+│       │   ├── split.js          # 板块拆分动画
+│       │   ├── pb-data.json      # 板块边界数据
+│       │   ├── split-data.json   # 板块拆分轮廓数据
+│       │   └── textures/         # 板块边界类型示意图
+│       ├── volcanoes/
+│       │   ├── volcanoes.js      # 火山数据模块
+│       │   └── data.json         # 火山数据
+│       ├── earthquakes/
+│       │   └── earthquakes.js    # 地震数据模块（USGS API）
+│       └── interior/
+│           └── interior.js       # 地球内部结构模块
+├── Solar_System/                 # 太阳系相关交互展示，供后续扩展
+│   ├── README.md                 # 模块说明与扩展约定
+│   ├── sem/
+│   │   └── sem.js                # 日-地-月系统模块
+│   ├── system/                   # 预留：太阳系比例展示的程序与页面
+│   └── textures/                 # 共用贴图，含太阳、月球及其他行星
+│       ├── sun.jpg               # 太阳表面贴图
+│       ├── moon.jpg              # 月球表面贴图
+│       └── …                     # 行星表面、大气和土星环贴图
+├── i18n/
+│   └── lang.js                   # 共用中英文文案
+└── vite.config.js                # 构建与静态资源复制配置
 ```
+
+地球本体文件已集中到 `earth/main/`，地球专题功能已归入 `earth/earth_function/`；日地月场景共用 `earth/main/earth.jpg`。
+日-地-月系统已归入 [`Solar_System/`](./Solar_System/README.md)，界面入口和交互保持不变。
+后续整个太阳系的比例展示可在该目录中作为新模块扩展；本次仅整理目录，未新增行星或改变现有比例。
 
 ## 运行
 

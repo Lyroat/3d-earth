@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { t } from '../../i18n/lang.js';
+import { t } from '../../../i18n/lang.js';
 
 const BOUNDARY_R = 1.003; // 边界线离地球表面的高度（1=贴地表，越大越高）
 // 边界类型颜色：c=汇聚(红)、d=离散(绿)、t=转换(黄)、u=未分类(灰)
@@ -28,7 +28,7 @@ const PLATES = [
 ];
 
 function getKcBoundary(key) {
-  return { title: t('kc.'+key+'.title'), desc: t('kc.'+key+'.desc'), img: 'earth_function/plates/textures/' + ({c:'汇聚型板块边界',d:'离散型板块边界',t:'转换断层'})[key.split('-')[1]] + '.jpg' };
+  return { title: t('kc.'+key+'.title'), desc: t('kc.'+key+'.desc'), img: 'earth/earth_function/plates/textures/' + ({c:'汇聚型板块边界',d:'离散型板块边界',t:'转换断层'})[key.split('-')[1]] + '.jpg' };
 }
 
 export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 }, deps) {
@@ -37,7 +37,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
   scene.add(boundaryGroup);
   const bPairs = [];
 
-  const PB = await fetch('earth_function/plates/pb-data.json').then(r => r.json());
+  const PB = await fetch('earth/earth_function/plates/pb-data.json').then(r => r.json());
 
   function parsePlate(code){ return code.replace(/[\\\/]/g,'-').split('-').map(p=>getPlateName(p)).join(' — '); }
 

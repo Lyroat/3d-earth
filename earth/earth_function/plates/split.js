@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { t } from '../../i18n/lang.js';
+import { t } from '../../../i18n/lang.js';
 
 const BOUNDARY_R = 1.003; // 边界线离地球表面的高度（1=贴地表，越大越高）
 
@@ -14,7 +14,7 @@ export async function init({ scene, TILT, resolution, allLineMats, lngLatToVec3 
   const splitGroups = {};
   let splitInited = false, splitActive = false, splitProgress = 0, splitDir = 0;
 
-  const SPLIT_INFO = await fetch('earth_function/plates/split-data.json').then(r => r.json());
+  const SPLIT_INFO = await fetch('earth/earth_function/plates/split-data.json').then(r => r.json());
 
   function makeTextSprite(text, color){
     const cv=document.createElement('canvas');cv.width=512;cv.height=128;

@@ -44,14 +44,14 @@ export function init({ scene, camera, renderer, TILT }) {
   scene.add(earth);
 
   const texLoader = new THREE.TextureLoader();
-  texLoader.load('earth/bump.jpg', tex => {
+  texLoader.load('earth/main/bump.jpg', tex => {
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     earthMat.uniforms.uBumpTex.value = tex;
   });
 
   (function loadEarthTex(){
     document.getElementById('loading').classList.remove('hidden');
-    texLoader.load('earth/earth.jpg', tex => {
+    texLoader.load('earth/main/earth.jpg', tex => {
       tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
       earthMat.uniforms.uTex.value = tex;
       document.getElementById('loading').classList.add('hidden');

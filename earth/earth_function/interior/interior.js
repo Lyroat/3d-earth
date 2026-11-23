@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { t, getLang } from '../../i18n/lang.js';
+import { t, getLang } from '../../../i18n/lang.js';
 
 // 地球各层配置：name=中文名, rOuter/rInner=外/内归一化半径(1.0=地表), color=颜色, depth=深度, temp=温度, comp=成分, state=物态
 const LAYERS = [

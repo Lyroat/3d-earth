@@ -3,14 +3,14 @@ import { t, getLang, setLang, updateDOM } from './i18n/lang.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { init as initEarth, lngLatToVec3 } from './earth/earth.js';
-import { init as initMagnetic } from './earth_function/magnetic/magnetic.js';
-import { init as initSEM } from './sem/sem.js';
-import { init as initPlates } from './earth_function/plates/plates.js';
-import { init as initSplit } from './earth_function/plates/split.js';
-import { init as initVolcanoes } from './earth_function/volcanoes/volcanoes.js';
-import { init as initInterior } from './earth_function/interior/interior.js';
-import { init as initEarthquakes } from './earth_function/earthquakes/earthquakes.js';
+import { init as initEarth, lngLatToVec3 } from './earth/main/earth.js';
+import { init as initMagnetic } from './earth/earth_function/magnetic/magnetic.js';
+import { init as initSEM } from './Solar_System/sem/sem.js';
+import { init as initPlates } from './earth/earth_function/plates/plates.js';
+import { init as initSplit } from './earth/earth_function/plates/split.js';
+import { init as initVolcanoes } from './earth/earth_function/volcanoes/volcanoes.js';
+import { init as initInterior } from './earth/earth_function/interior/interior.js';
+import { init as initEarthquakes } from './earth/earth_function/earthquakes/earthquakes.js';
 import { loadApprovedPhotos, initUploadModal } from './photos/photos.js';
 
 /* ══════════ Scene — 场景、相机、渲染器初始化 ══════════ */
