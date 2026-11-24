@@ -1,14 +1,36 @@
 import '../../guard.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { AU_KM, BODIES, BODY_BY_ID, DAY_MS, MIN_TIME, MAX_TIME, SIZE_OPTIONS, radiusAU } from './data.js';
+import { AU_KM, BODIES, BODY_BY_ID, DAY_MS, MIN_TIME, MAX_TIME, SIZE_OPTIONS } from './data.js';
 import { stateAt, sampleOrbit } from './astronomy.js';
 import { createAsteroidBelt, seededRandom } from './asteroids.js';
 import { appearanceRadius, applyAppearanceScale, updateAppearanceForView } from './appearance.js';
+import { limitCameraZoom } from './zoom-limits.js';
 import { applyModeUI, createModeController } from './mode-controller.js';
 import { getLang, setLang, updateDOM } from '../../i18n/lang.js';
+import { screenSpaceUI } from '../../ui/screen-space.js';
 
 const $ = id => document.getElementById(id);
+const header = document.querySelector('.obs-header');
+const solarTimeline = document.querySelector('.timeline[data-context="solar"]');
+const rulerLine = document.querySelector('.ruler-line');
+let uiMetrics;
+function refreshUILayout() {
+  const footer = solarTimeline.getBoundingClientRect();
+  uiMetrics = screenSpaceUI(getComputedStyle(document.documentElement).fontSize, {
+    height: innerHeight,
+    headerBottom: header.getBoundingClientRect().bottom,
+    footerTop: footer.height ? footer.top : innerHeight,
+  });
+}
+refreshUILayout();
+// Font preferences and live stylesheet changes can resize UI without a
+// window resize. Observe the actual panels, not the 3D canvas.
+if (typeof ResizeObserver !== 'undefined') {
+  const layoutObserver = new ResizeObserver(refreshUILayout);
+  layoutObserver.observe(header);
+  layoutObserver.observe(solarTimeline);
+}
 const textureURLs = {
   Sun: new URL('../textures/sun.jpg', import.meta.url).href,
   Mercury: new URL('../textures/Mercury.jpg', import.meta.url).href,
@@ -68,6 +90,7 @@ const modes = createModeController({
     clearTimeout(noticeTimeout);
     $('notice').classList.remove('visible');
     applyModeUI(document, mode);
+    refreshUILayout();
     history.replaceState(null, '', `${location.pathname}${location.search}${mode === 'sem' ? '#sem' : ''}`);
     lastFrame = performance.now();
   },
@@ -266,8 +289,7 @@ function setViewButton(view) {
 function setCameraDistance(distance, direction) {
   controls.target.set(0, 0, 0);
   camera.position.copy(direction).normalize().multiplyScalar(distance);
-  controls.minDistance = visibleRadius(BODY_BY_ID[follow ? selected : 'Sun']) * 1.15;
-  camera.near = Math.max(1e-10, distance / 20000);
+  safeCamera();
   controls.update();
 }
 function visibleRadius(body) {
@@ -308,10 +330,11 @@ function applySize(scale) {
   if (!SIZE_OPTIONS.includes(scale) || scale === sizeScale) return;
   const oldScale = sizeScale;
   sizeScale = scale;
-  const retreated = applyAppearanceScale({
-    nodes, camera, controls, scale, previousScale: oldScale,
+  const appearanceRetreated = applyAppearanceScale({
+    nodes, camera, scale, previousScale: oldScale,
     focusId: follow ? selected : null, viewportHeight: innerHeight,
   });
+  const retreated = safeCamera() || appearanceRetreated;
   document.querySelectorAll('[data-scale]').forEach(button => {
     const active = Number(button.dataset.scale) === scale;
     button.classList.toggle('active', active);
@@ -319,7 +342,6 @@ function applySize(scale) {
   });
   $('size-label').textContent = `×${scale}`;
   $('appearance-note').hidden = scale === 1;
-  $('magnify-warning').hidden = scale === 1;
   controls.update();
   if (scale !== 1) {
     const hint = retreated ? '镜头过近，已避让以防穿入或严重裁切。'
@@ -388,9 +410,9 @@ function updateLabels() {
     const depth = -node.group.position.clone().applyMatrix4(camera.matrixWorldInverse).z;
     const pixelRadius = appearanceRadius(node.body, 1) * node.group.scale.x
       / Math.max(camera.near, depth) * innerHeight / (2 * Math.tan(camera.getEffectiveFOV() * Math.PI / 360));
-    const labelX = x + Math.max(4, pixelRadius + 5), labelY = y - 10;
-    const out = !labelsVisible || projected.z < -1 || projected.z > 1 || x < 0 || x > innerWidth || y < 76 || y > innerHeight - 112;
-    const overlaps = used.some(p => Math.abs(p.x - labelX) < 57 && Math.abs(p.y - labelY) < 20);
+    const labelX = x + Math.max(4 * uiMetrics.scale, pixelRadius + 5 * uiMetrics.scale), labelY = y - 10 * uiMetrics.scale;
+    const out = !labelsVisible || projected.z < -1 || projected.z > 1 || x < 0 || x > innerWidth || y < uiMetrics.labelTop || y > uiMetrics.labelBottom;
+    const overlaps = used.some(p => Math.abs(p.x - labelX) < uiMetrics.labelGapX && Math.abs(p.y - labelY) < uiMetrics.labelGapY);
     // Tiny Moon label is hidden in full overview rather than covering Earth's label.
     const closeMoon = node.body.id === 'Moon' && selected !== 'Moon' &&
       camera.position.distanceTo(nodes.get('Earth').group.position) > 0.07;
@@ -404,22 +426,23 @@ function updateLabels() {
 function updateRuler() {
   const distance = camera.position.distanceTo(controls.target);
   const worldPerPixel = 2 * distance * Math.tan(camera.fov * Math.PI / 360) / innerHeight;
-  const target = worldPerPixel * 100;
+  const target = worldPerPixel * uiMetrics.rulerTarget;
   const power = 10 ** Math.floor(Math.log10(target));
   const length = [1, 2, 5, 10].map(v => v * power).find(v => v >= target) || power * 10;
-  document.querySelector('.ruler-line').style.width = `${Math.round(length / worldPerPixel)}px`;
+  rulerLine.style.width = `${Math.round(length / worldPerPixel)}px`;
   $('ruler-label').textContent = length >= 0.01 ? `${num(length)} AU` : `${num(length * AU_KM)} km`;
 }
 function safeCamera() {
-  // Prevent crossing the focused surface even after manual panning.
-  const body = BODY_BY_ID[follow ? selected : 'Sun'];
-  const centre = follow ? new THREE.Vector3() : nodes.get('Sun').group.position;
-  const offset = camera.position.clone().sub(centre);
-  const min = radiusAU(body, sizeScale) * 1.12;
-  if (offset.length() < min) camera.position.copy(centre).add(offset.setLength(min));
+  // The +/- buttons are shared; never apply AU-scale bounds to the SEM scene.
+  if (modes.active !== 'solar') return false;
+  const node = nodes.get(follow ? selected : 'Sun');
+  const retreated = limitCameraZoom({
+    camera, controls, centre: node.group.position, radius: visibleRadius(node.body),
+  });
   const distance = camera.position.distanceTo(controls.target);
   camera.near = Math.max(1e-10, Math.min(0.1, distance / 20000));
   camera.updateProjectionMatrix();
+  return retreated;
 }
 function animate(now) {
   requestAnimationFrame(animate);
@@ -522,6 +545,7 @@ function bindEvents() {
   const zoom = factor => {
     camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);
     controls.update();
+    safeCamera();
   };
   $('zoom-in').addEventListener('click', () => zoom(0.7));
   $('zoom-out').addEventListener('click', () => zoom(1 / 0.7));
@@ -552,6 +576,7 @@ function bindEvents() {
     }
   });
   addEventListener('resize', () => {
+    refreshUILayout();
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));

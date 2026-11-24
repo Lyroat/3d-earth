@@ -3,14 +3,17 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { AstroTime } from 'astronomy-engine';
 import { Group, Mesh, PerspectiveCamera, RingGeometry, Scene, SphereGeometry, Texture, Vector3 } from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { AU_KM, BODIES, BODY_BY_ID, DAY_MS, MIN_TIME, MAX_TIME, SIZE_OPTIONS, radiusAU, polarAU } from './data.js';
 import { positionAt, orientationAt, stateAt, sampleOrbit } from './astronomy.js';
 import { createPopulation, asteroidPosition } from './asteroids.js';
 import { appearanceRadius, applyAppearanceScale, observationDiameter, updateAppearanceForView } from './appearance.js';
+import { limitCameraZoom, minimumZoomDistance, observationHalfFov, MAX_ZOOM_FRAME_FRACTION } from './zoom-limits.js';
 import { createTeachingState, advanceTeachingState, SEASON_ANGLES } from '../sem/model.js';
 import { createSEM } from '../sem/sem.js';
 import { captureView, restoreView } from './view-state.js';
 import { applyModeUI, createModeController } from './mode-controller.js';
+import { screenSpaceUI } from '../../ui/screen-space.js';
 
 const date = new Date('2026-11-23T00:00:00Z');
 const close = (a, b, tolerance = 1e-11) => assert.ok(Math.abs(a - b) < tolerance, `${a} != ${b}`);
@@ -87,6 +90,10 @@ test('10x and 25x grow in focused views, including the Sun, Saturn rings and por
       for (const scale of [10, 25]) {
         const beforeTarget = fixture.controls.target.clone();
         applyAppearanceScale({ ...fixture, scale, previousScale, focusId: id });
+        limitCameraZoom({
+          ...fixture, centre: fixture.nodes.get(id).group.position,
+          radius: appearanceRadius(BODY_BY_ID[id], scale),
+        });
         const angle = angularRadius(BODY_BY_ID[id], scale, fixture.camera);
         assert.ok(angle > previousAngle * 1.1, `${id}, aspect ${aspect}, ${scale}x must visibly enlarge`);
         assert.ok(fixture.camera.position.length() > appearanceRadius(BODY_BY_ID[id], scale));
@@ -128,6 +135,10 @@ test('full / inner / top views show progressively visible ORIGINAL Sun and plane
       let previousScale = 1;
       for (const scale of [10, 25, 1, 25, 10, 1]) {
         applyAppearanceScale({ ...fixture, scale, previousScale, viewportHeight: height });
+        limitCameraZoom({
+          ...fixture, centre: fixture.nodes.get('Sun').group.position,
+          radius: appearanceRadius(BODY_BY_ID.Sun, scale),
+        });
         assert.deepEqual(fixture.camera.position.toArray(), cameraBefore);
         assert.deepEqual(fixture.controls.target.toArray(), targetBefore);
         for (const [id, node] of fixture.nodes) {
@@ -234,6 +245,171 @@ test('camera motion, viewport resize and body motion refresh the visibility floo
   updateAppearanceForView({ ...fixture, scale: 1, viewportHeight: 844 });
   for (const node of fixture.nodes.values()) assert.deepEqual(node.group.scale.toArray(), [1, 1, 1]);
 });
+test('close-up zoom is bounded for every body and size preset, including Saturn rings and portrait views', () => {
+  for (const body of BODIES) {
+    for (const aspect of [16 / 9, 32 / 9, 390 / 844]) {
+      for (const scale of SIZE_OPTIONS) {
+        const fixture = appearanceFixture(body.id, aspect);
+        const { camera, controls } = fixture;
+        const radius = appearanceRadius(body, scale);
+        const centre = fixture.nodes.get(body.id).group.position;
+        const positions = [...fixture.nodes.values()].map(node => node.group.position.toArray());
+        camera.position.set(0, 0, radius * 1.01); // Previously allowed near-surface magnification.
+        assert.equal(limitCameraZoom({ camera, controls, centre, radius }), true);
+        close(camera.position.distanceTo(centre) / radius, minimumZoomDistance(camera, radius) / radius);
+        close(controls.minDistance / radius, camera.position.distanceTo(centre) / radius);
+        close(Math.asin(radius / camera.position.distanceTo(centre)),
+          observationHalfFov(camera) * MAX_ZOOM_FRAME_FRACTION);
+        assert.ok(MAX_ZOOM_FRAME_FRACTION < 1, 'Leave a margin instead of clipping the planet');
+        assert.deepEqual(controls.target.toArray(), [0, 0, 0]);
+        assert.deepEqual([...fixture.nodes.values()].map(node => node.group.position.toArray()), positions);
+        updateAppearanceForView({ ...fixture, scale, viewportHeight: 900 });
+        close(fixture.nodes.get(body.id).group.scale.x, scale, 1e-10);
+      }
+    }
+  }
+});
+test('repeated dollying stops at the same boundary while rotation and zooming out remain available', () => {
+  const { camera, controls } = appearanceFixture('Earth');
+  const centre = new Vector3(), radius = radiusAU(BODY_BY_ID.Earth);
+  const clamp = () => limitCameraZoom({ camera, controls, centre, radius });
+  const minimum = minimumZoomDistance(camera, radius);
+  for (const factor of [0.7, 0.95, 0.2]) {
+    for (let i = 0; i < 100; i++) {
+      camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);
+      clamp();
+      assert.ok(camera.position.distanceTo(centre) >= minimum * (1 - 1e-12));
+    }
+    close(camera.position.distanceTo(centre) / minimum, 1);
+  }
+  for (const direction of [[1, 0, 0], [-1, 2, 3], [0, -1, 1]]) {
+    camera.position.fromArray(direction).normalize().multiplyScalar(minimum);
+    clamp();
+    assert.ok(camera.position.clone().normalize().distanceTo(new Vector3(...direction).normalize()) < 1e-12);
+    camera.position.multiplyScalar(1 / 0.7);
+    assert.equal(clamp(), false, 'The limit must not lock the user into a close-up view');
+    close(camera.position.length() / minimum, 1 / 0.7);
+  }
+  assert.deepEqual(controls.target.toArray(), [0, 0, 0]);
+});
+test('real OrbitControls wheel and middle-drag obey the cap without blocking rotation or zoom-out', () => {
+  // Only the event surface is mocked: run the actual control's input handlers
+  // and damping, with the same post-update limit used by the solar RAF.
+  const root = new EventTarget();
+  class Canvas extends EventTarget {
+    style = {};
+    clientWidth = 1440;
+    clientHeight = 900;
+    getRootNode() { return root; }
+    getBoundingClientRect() { return { left: 0, top: 0, width: 1440, height: 900 }; }
+    setPointerCapture() {}
+    releasePointerCapture() {}
+  }
+  const canvas = new Canvas();
+  const { camera } = appearanceFixture();
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.07;
+  const centre = new Vector3(), radius = radiusAU(BODY_BY_ID.Earth);
+  const minimum = minimumZoomDistance(camera, radius);
+  const frame = () => {
+    controls.update();
+    limitCameraZoom({ camera, controls, centre, radius });
+    assert.ok(camera.position.length() >= minimum * (1 - 1e-12));
+  };
+  const send = (type, fields) => canvas.dispatchEvent(Object.assign(new Event(type, { cancelable: true }), fields));
+  frame();
+  try {
+    for (let i = 0; i < 100; i++) {
+      send('wheel', { deltaY: -400, deltaMode: 0, clientX: 720, clientY: 450 });
+      frame();
+    }
+    close(camera.position.length() / minimum, 1);
+    send('pointerdown', { pointerId: 1, pointerType: 'mouse', button: 1, clientX: 720, clientY: 450 });
+    for (let i = 1; i <= 100; i++) {
+      send('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 720, clientY: 450 - i * 20 });
+      frame();
+    }
+    send('pointerup', { pointerId: 1 });
+    close(camera.position.length() / minimum, 1);
+    const beforeDirection = camera.position.clone().normalize();
+    send('pointerdown', { pointerId: 2, pointerType: 'mouse', button: 0, clientX: 720, clientY: 450 });
+    send('pointermove', { pointerId: 2, pointerType: 'mouse', clientX: 900, clientY: 400 });
+    send('pointerup', { pointerId: 2 });
+    for (let i = 0; i < 120; i++) frame();
+    assert.ok(camera.position.clone().normalize().distanceTo(beforeDirection) > 0.1);
+    close(camera.position.length() / minimum, 1);
+    send('wheel', { deltaY: 400, deltaMode: 0, clientX: 720, clientY: 450 });
+    frame();
+    assert.ok(camera.position.length() > minimum * 1.1);
+    assert.deepEqual(controls.target.toArray(), [0, 0, 0]);
+  } finally {
+    controls.dispose();
+  }
+});
+test('panning cannot bypass the body-centred limit or cause a snap across the body', () => {
+  const { camera, controls } = appearanceFixture();
+  const centre = new Vector3(), radius = radiusAU(BODY_BY_ID.Earth);
+  const minimum = minimumZoomDistance(camera, radius);
+  controls.target.set(minimum * 0.5, 0, 0);
+  camera.position.set(minimum * 0.5, 0, minimum * 2);
+  const target = controls.target.toArray();
+  for (let i = 0; i < 100; i++) {
+    camera.position.sub(controls.target).multiplyScalar(0.7).add(controls.target);
+    limitCameraZoom({ camera, controls, centre, radius });
+    assert.ok(camera.position.length() >= minimum * (1 - 1e-12));
+    assert.deepEqual(controls.target.toArray(), target);
+  }
+  close(camera.position.length() / minimum, 1);
+  close(controls.minDistance, camera.position.distanceTo(controls.target));
+  assert.ok(controls.minDistance < minimum, 'Use the panned ray intersection, not a fixed target radius');
+
+  // Both camera and target are outside, on the same side: zooming toward the
+  // target moves AWAY from the body and must not teleport to its other side.
+  controls.target.set(0, 0, minimum * 3);
+  camera.position.set(0, 0, minimum * 2);
+  const before = camera.position.toArray();
+  assert.equal(limitCameraZoom({ camera, controls, centre, radius }), false);
+  assert.deepEqual(camera.position.toArray(), before);
+  assert.equal(controls.minDistance, 0);
+});
+test('zoom bounds adapt to window shape, effective FOV and size changes without forcing a zoom-in', () => {
+  const { camera, controls } = appearanceFixture('Saturn');
+  const centre = new Vector3();
+  const body = BODY_BY_ID.Saturn;
+  for (const aspect of [16 / 9, 0.45, 2]) {
+    camera.aspect = aspect;
+    for (const zoom of [1, 1.8]) {
+      camera.zoom = zoom;
+      camera.updateProjectionMatrix();
+      for (const scale of [1, 10, 25, 1]) {
+        const radius = appearanceRadius(body, scale);
+        const before = camera.position.clone();
+        const minimum = minimumZoomDistance(camera, radius);
+        const expectedRetreat = before.distanceTo(centre) < minimum;
+        assert.equal(limitCameraZoom({ camera, controls, centre, radius }), expectedRetreat);
+        close(controls.minDistance / radius, minimum / radius);
+        if (!expectedRetreat) assert.deepEqual(camera.position.toArray(), before.toArray());
+        assert.ok(camera.position.length() >= minimum * (1 - 1e-12));
+      }
+    }
+  }
+  assert.ok(appearanceRadius(body, 1) > radiusAU(body), 'Include the outer ring in the bound');
+});
+test('zoom safety handles a coincident camera and translated origins without changing distant views', () => {
+  const { camera, controls } = appearanceFixture('Neptune');
+  const radius = radiusAU(BODY_BY_ID.Neptune);
+  const centre = new Vector3(1.5, -0.3, 2.2);
+  controls.target.copy(centre);
+  camera.position.copy(centre);
+  assert.equal(limitCameraZoom({ camera, controls, centre, radius }), true);
+  assert.ok([...camera.position.toArray(), controls.minDistance].every(Number.isFinite));
+  close(camera.position.distanceTo(centre) / minimumZoomDistance(camera, radius), 1);
+  camera.position.copy(centre).add(new Vector3(0, 50, 70));
+  const before = camera.position.toArray();
+  assert.equal(limitCameraZoom({ camera, controls, centre, radius }), false);
+  assert.deepEqual(camera.position.toArray(), before);
+});
 test('the page offers only original / 10x / 25x, without displaced-preview controls', () => {
   const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
   assert.deepEqual([...html.matchAll(/data-scale="(\d+)"/g)].map(match => Number(match[1])), SIZE_OPTIONS);
@@ -245,18 +421,22 @@ test('simplified UI removes view captions and top-right extras without dropping 
   const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
   const script = readFileSync(new URL('./system.js', import.meta.url), 'utf8');
   const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]));
-  for (const id of ['view-title', 'view-hint', 'scale-status', 'about', 'about-open', 'about-close']) {
+  for (const id of ['view-title', 'view-hint', 'scale-status', 'about', 'about-open', 'about-close', 'magnify-warning']) {
     assert.ok(!ids.has(id), `${id} must be removed from the interface`);
     assert.ok(!script.includes(`$('${id}')`), `${id} must not leave dangling handlers`);
   }
   for (const id of ['refocus', 'focus-card', 'play-pause', 'time-speed', 'time-now', 'date-form',
-    'appearance-note', 'size-buttons', 'magnify-warning']) {
+    'appearance-note', 'size-buttons']) {
     assert.ok(ids.has(id), `${id} remains available`);
   }
   // A removed UI node must not cause initialization, keyboard or size switching to throw.
   for (const [, id] of script.matchAll(/\$\('([^']+)'\)/g)) {
     assert.ok(ids.has(id), `Missing DOM element #${id}`);
   }
+  assert.ok(!html.includes('观察模式：太阳与行星大小均为示意'));
+  assert.ok(!readFileSync(new URL('./system.css', import.meta.url), 'utf8').includes('.body-card .warning'));
+  assert.match(script, /function safeCamera\(\) \{[\s\S]*?if \(modes\.active !== 'solar'\) return false/,
+    'Shared zoom buttons must not apply solar bounds to the SEM scene');
 });
 test('heliocentric distances are plausible, including the geocentric Moon', () => {
   const bounds = { Mercury: [.30, .47], Venus: [.71, .74], Earth: [.98, 1.02],
@@ -526,6 +706,7 @@ test('camera state repeatedly round-trips between AU and teaching scales without
 test('actual mode coordinator preserves both scenes and restores camera/context on repeated switches', async () => {
   const { model, camera, controls } = teachingFixture();
   camera.position.set(0, 50, 70); controls.maxDistance = 240;
+  limitCameraZoom({ camera, controls, centre: new Vector3(), radius: radiusAU(BODY_BY_ID.Sun) });
   const initialSolar = captureView(camera, controls);
   const changes = [];
   let loads = 0;
@@ -662,7 +843,7 @@ test('both sidebars share planet navigation and auxiliary rows, with no emoji in
   assert.deepEqual([...auxiliary.matchAll(/data-sem-marker="(\w+)"/g)].map(match => match[1]), Object.keys(SEASON_ANGLES));
   assert.doesNotMatch(sidebar, /\p{Extended_Pictographic}/u);
   const css = readFileSync(new URL('./system.css', import.meta.url), 'utf8');
-  assert.ok(css.includes('.body-nav{display:flex;flex-direction:column;gap:3px}'));
+  assert.ok(css.includes('.body-nav{display:flex;flex-direction:column;gap:0.1875rem}'));
   assert.ok(!css.includes('.teaching-sidebar .switch-row'), 'No divergent SEM row sizing');
   assert.ok(!css.includes('.nav-en,.display-control'), 'Auxiliary switches remain available on small screens');
 });
@@ -743,5 +924,68 @@ test('SEM auxiliary UI events update the scene, persist across mode changes and 
       if (previous[i]) Object.defineProperty(globalThis, name, previous[i]);
       else delete globalThis[name];
     });
+  }
+});
+
+test('all observatory UI uses relative dimensions without changing CSS-pixel media breakpoints', () => {
+  const paths = ['../../ui/theme.css', '../../ui/earth-ui.css', '../../style.css', './system.css'];
+  for (const path of paths) {
+    const css = readFileSync(new URL(path, import.meta.url), 'utf8');
+    assert.doesNotMatch(css, /font-size\s*:\s*[\d.]+px\b/, `${path}: no tiny fixed-pixel typography`);
+    assert.doesNotMatch(css, /\bzoom\s*:/, 'UI resizing must not zoom the WebGL canvas or shift pointer coordinates');
+    assert.doesNotMatch(css, /@media[^{]*rem\b/, 'Media queries remain independent of the fluid root size');
+    assert.match(css, /\bfont-size\s*:\s*[\d.]+rem\b/);
+  }
+  const css = readFileSync(new URL('./system.css', import.meta.url), 'utf8');
+  assert.match(css, /\.sidebar\{[^}]*overflow:auto/);
+  assert.match(css, /\.body-card\{[^}]*max-height:calc\(100dvh - [\d.]+rem\);overflow-y:auto/);
+  assert.match(css, /\.switch-row input\{[^}]*width:1\.625rem;height:0\.875rem/);
+  assert.match(css, /\.nav-body\{[^}]*padding:0\.5rem 0\.625rem;[^}]*font-size:0\.75rem/);
+});
+
+test('fluid theme grows desktop text and hit areas at HD / QHD / 4K, but bounds short and ultrawide layouts', () => {
+  const css = readFileSync(new URL('../../ui/theme.css', import.meta.url), 'utf8');
+  assert.match(css, /font-size:\s*100%;/);
+  assert.match(css, /@media\(min-width:1280px\)[\s\S]*?clamp\(100%, var\(--obs-fluid-font\), 200%\)/);
+  assert.match(css, /@media\(min-width:1600px\)[\s\S]*?clamp\(125%, var\(--obs-fluid-font\), 200%\)/);
+  const [, vw, vh] = css.match(/--obs-fluid-font:\s*min\(([\d.]+)vw,\s*([\d.]+)vh\)/);
+  // Calculate the declared CSS bounds, not a second production scaling rule.
+  const rootSize = (width, height, preferred = 16) => width < 1280 ? preferred
+    : Math.max(preferred * (width >= 1600 ? 1.25 : 1), Math.min(width * vw / 100, height * vh / 100, preferred * 2));
+  for (const [width, height] of [[390, 844], [760, 600], [1100, 800], [1280, 720], [1366, 768]]) {
+    close(rootSize(width, height), 16, 0.001);
+  }
+  let previous = 16;
+  for (const [width, height] of [[1440, 900], [1920, 1080], [2560, 1440], [3840, 2160], [5120, 2880]]) {
+    const root = rootSize(width, height), scale = root / 16;
+    assert.ok(root >= previous && root <= 32);
+    if (width >= 1600) {
+      assert.ok(11 * scale >= 13.75, 'Common 11px button labels are no longer tiny on large screens');
+      assert.ok(34 * scale >= 42.5, 'Switch row click areas grow along with their text');
+    }
+    previous = root;
+  }
+  close(rootSize(3440, 720), 20);
+  close(rootSize(5120, 2880), 32);
+  assert.ok(rootSize(1920, 1080, 24) >= 30, 'Respect larger browser default fonts');
+  close(rootSize(390, 844, 24), 24);
+});
+
+test('screen-space labels and ruler follow rem UI size without scaling scientific geometry or CSS-pixel placement', () => {
+  for (const root of [16, 20, 24, 32]) {
+    const scale = root / 16, height = 1080;
+    const headerBottom = 92 * scale, footerTop = height - 117 * scale;
+    const metrics = screenSpaceUI(`${root}px`, { height, headerBottom, footerTop });
+    close(metrics.scale, scale);
+    close(metrics.labelTop - headerBottom, 18 * scale);
+    close(footerTop - metrics.labelBottom, 18 * scale);
+    close(metrics.labelGapX, 57 * scale);
+    close(metrics.labelGapY, 20 * scale);
+    close(metrics.rulerTarget, 100 * scale);
+    const worldPerPixel = 0.05;
+    close(worldPerPixel * metrics.rulerTarget / metrics.rulerTarget, worldPerPixel);
+  }
+  for (const invalid of ['', 'auto', '0px', '-16px']) {
+    assert.equal(screenSpaceUI(invalid, { height: 900, headerBottom: 92, footerTop: 783 }).scale, 1);
   }
 });
