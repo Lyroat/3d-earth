@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080c12">
+  <title>太阳系 · 真实比例观测台</title>
+  <link rel="stylesheet" href="../../ui/theme.css">
+  <link rel="stylesheet" href="./system.css">
+</head>
+<body data-mode="solar">
+  <div id="scene" aria-label="可拖拽旋转、滚轮缩放的三维太阳系"></div>
+  <div id="labels" data-context="solar"></div>
+  <header class="obs-header">
+    <div class="obs-brand"><span class="obs-symbol">☉</span><div><h1 data-i18n="obs.solarTitle">太阳系</h1><p>SOLAR SYSTEM OBSERVATORY</p></div></div>
+    <nav class="obs-nav" aria-label="探索主题"><a href="../../index.html" data-i18n="obs.earthExplore">地球探索</a></nav>
+    <div class="mode-switch" role="group" aria-label="切换观测模式">
+      <button data-mode="solar" aria-pressed="true" data-i18n="obs.solar">太阳系观测</button>
+      <button data-mode="sem" aria-pressed="false" data-i18n="obs.sem">日地月系统观测</button>
+    </div>
+    <button id="lang-toggle" class="obs-lang" data-i18n="lang.toggle">EN</button>
+  </header>
+
+  <aside class="sidebar" data-context="solar" aria-label="太阳系控制">
+    <div class="panel-heading"><span>天体导航</span><span class="eyebrow">01 — 10</span></div>
+    <p class="subtle nav-help">点击天体，进入跟随观察</p>
+    <nav id="body-nav" class="body-nav" aria-label="选择天体"></nav>
+    <section class="size-control">
+      <div class="panel-heading"><label>原位观察放大</label><span id="size-label">×1</span></div>
+      <div id="size-buttons" class="segmented" role="group" aria-label="原位观察档位，10×和25×不是实际尺寸倍数">
+        <button data-scale="1" class="active" aria-pressed="true">原尺寸</button>
+        <button data-scale="10" aria-pressed="false">10×</button>
+        <button data-scale="25" aria-pressed="false">25×</button>
+      </div>
+      <p class="subtle">10×／25× 为可视化档位，非真实尺寸倍数<br>太阳与行星同步变大，中心与轨道不变</p>
+    </section>
+    <section class="display-control">
+      <div class="panel-heading" data-i18n="obs.auxiliaryDisplay">辅助显示</div>
+      <label class="switch-row"><span>天体名称 <small>定位标记，非天体大小</small></span><input id="toggle-labels" type="checkbox" checked></label>
+      <label class="switch-row"><span>公转轨迹</span><input id="toggle-orbits" type="checkbox" checked></label>
+      <label class="switch-row"><span>自转轴线</span><input id="toggle-axes" type="checkbox"></label>
+      <label class="switch-row"><span>小行星带 <small>1,600 个示意轨道样本</small></span><input id="toggle-belt" type="checkbox" checked></label>
+      <label class="switch-row"><span>小行星定位点 <small>点尺寸不代表岩块大小</small></span><input id="toggle-belt-markers" type="checkbox" checked></label>
+    </section>
+  </aside>
+
+  <aside class="sidebar teaching-sidebar" data-context="sem" aria-label="日地月系统观测控制" hidden>
+    <div class="panel-heading"><span data-i18n="obs.observeFrom">观察中心</span><span class="eyebrow">01 — 02</span></div>
+    <p class="subtle teaching-disclaimer" data-i18n="obs.teachingNote">教学示意比例，不代表实际大小、距离或当前星历。</p>
+    <nav class="body-nav" aria-label="选择日地月观察中心">
+      <button class="nav-body" data-sem-focus="sun" style="--body-color:#e9b76c">
+        <i class="nav-dot" aria-hidden="true"></i><span data-i18n="sem.sunCenter">太阳中心</span><span class="nav-en">SUN</span>
+      </button>
+      <button class="nav-body" data-sem-focus="earth" style="--body-color:#81afcf">
+        <i class="nav-dot" aria-hidden="true"></i><span data-i18n="sem.earthCenter">地球中心</span><span class="nav-en">EARTH</span>
+      </button>
+    </nav>
+    <section class="display-control">
+      <div class="panel-heading" data-i18n="sem.solsticeEquinox">分至点位</div>
+      <div class="teaching-grid">
+        <button data-season="spring" data-i18n="sem.spring">北分点</button>
+        <button data-season="summer" data-i18n="sem.summer">北至点</button>
+        <button data-season="autumn" data-i18n="sem.autumn">南分点</button>
+        <button data-season="winter" data-i18n="sem.winter">南至点</button>
+      </div>
+    </section>
+    <section class="display-control">
+      <div class="panel-heading" data-i18n="obs.auxiliaryDisplay">辅助显示</div>
+      <label class="switch-row"><span><span data-i18n="obs.semLabels">标注与纬线</span><small data-i18n="obs.semLabelsNote">地球纬线与分至点文字</small></span><input id="sem-labels" type="checkbox" checked></label>
+      <label class="switch-row"><span data-i18n="sem.orbits">轨道线</span><input id="sem-orbits" type="checkbox" checked></label>
+      <label class="switch-row"><span data-i18n="sem.sunlight">阳光直射</span><input id="sem-sunlight" type="checkbox" checked></label>
+      <label class="switch-row"><span data-i18n="sem.spring">北分点</span><input id="sem-marker-spring" data-sem-marker="spring" type="checkbox" checked></label>
+      <label class="switch-row"><span data-i18n="sem.summer">北至点</span><input id="sem-marker-summer" data-sem-marker="summer" type="checkbox" checked></label>
+      <label class="switch-row"><span data-i18n="sem.autumn">南分点</span><input id="sem-marker-autumn" data-sem-marker="autumn" type="checkbox" checked></label>
+      <label class="switch-row"><span data-i18n="sem.winter">南至点</span><input id="sem-marker-winter" data-sem-marker="winter" type="checkbox" checked></label>
+    </section>
+  </aside>
+
+  <main class="view-overlay">
+    <div class="view-tools" data-context="solar" role="group" aria-label="视野范围">
+      <button data-view="all" class="active">太阳系全景</button>
+      <button data-view="inner">内太阳系</button>
+      <button data-view="top">俯视</button>
+      <button id="refocus">聚焦所选</button>
+    </div>
+    <div data-context="solar"><p id="appearance-note" class="appearance-note" hidden>原位可视化 · 尺寸非比例 · 无引线、无移位</p></div>
+    <div class="view-tools" data-context="sem" role="group" aria-label="日地月观测视野" hidden>
+      <button data-sem-view="orbit" data-i18n="sem.revolution">公转</button>
+      <button data-sem-view="rotate" data-i18n="sem.rotation">自转</button>
+      <button id="sem-refocus" data-i18n="obs.refocus">重新取景</button>
+    </div>
+    <div class="zoom-tools"><button id="zoom-in" aria-label="放大视野">＋</button><button id="zoom-out" aria-label="缩小视野">−</button></div>
+    <div id="scale-ruler" data-context="solar"><div class="ruler-line"></div><span id="ruler-label">10 AU</span></div>
+  </main>
+
+  <article class="body-card" id="body-card" data-context="solar">
+    <div class="card-top"><span id="body-type" class="eyebrow">恒星</span><span id="body-number" class="eyebrow">00</span></div>
+    <h2 id="body-name">太阳 <span>SUN</span></h2>
+    <p id="body-description"></p>
+    <dl>
+      <div><dt>赤道半径</dt><dd id="body-radius"></dd></div>
+      <div><dt id="distance-title">当前日心距离</dt><dd id="body-distance"></dd></div>
+      <div><dt id="period-title">恒星公转周期</dt><dd id="body-period"></dd></div>
+      <div><dt>恒星自转周期</dt><dd id="body-rotation"></dd></div>
+      <div><dt>轴倾角（参考值）</dt><dd id="body-tilt"></dd></div>
+    </dl>
+    <button id="focus-card" class="primary">近距离观察太阳 ↗</button>
+    <button id="venus-surface" class="quiet" hidden>切换金星地表 / 云层</button>
+    <p id="magnify-warning" class="warning" hidden>观察模式：太阳与行星大小均为示意，中心与轨道不变。太阳放大后可能遮挡内侧行星，可切换内太阳系观察。</p>
+  </article>
+  <article class="body-card teaching-card" data-context="sem" aria-label="日地月知识卡片" hidden>
+    <div class="card-top"><span class="eyebrow">SUN · EARTH · MOON</span></div>
+    <div id="sem-lesson"></div>
+    <section id="sem-season-card" hidden><button id="sem-close-season" class="lesson-close" aria-label="关闭分至点知识卡片">×</button><div id="sem-season-lesson"></div></section>
+  </article>
+
+  <footer class="timeline" data-context="solar">
+    <div class="time-display"><span class="eyebrow">模拟时刻 / UTC</span><time id="simulation-time">—</time><span id="time-state" class="subtle">实时 · 1 秒 / 秒</span></div>
+    <div class="playback">
+      <button id="play-pause" aria-label="暂停模拟" title="空格：暂停或继续">Ⅱ</button>
+      <label class="speed-label"><span class="subtle">时间流速</span><select id="time-speed" aria-label="时间流速">
+        <option value="1">实时 · 1 秒 / 秒</option>
+        <option value="60">1 分钟 / 秒</option>
+        <option value="3600">1 小时 / 秒</option>
+        <option value="86400">1 天 / 秒</option>
+        <option value="604800">1 周 / 秒</option>
+        <option value="2592000">30 天 / 秒</option>
+      </select></label>
+      <button id="time-now" class="quiet">回到此刻</button>
+    </div>
+    <form id="date-form"><label class="eyebrow" for="date-input">跳转至 UTC 时刻</label><div><input id="date-input" type="datetime-local" step="1" min="1900-01-01T00:00" max="2100-12-31T23:59:59" required><button type="submit">前往</button></div></form>
+  </footer>
+  <footer class="timeline teaching-timeline" data-context="sem" hidden>
+    <div class="time-display"><span class="eyebrow" data-i18n="obs.teachingTitle">日地月系统观测</span><strong data-i18n="obs.teachingScale">示意比例</strong><span class="subtle" id="sem-time-state">演示运行中</span></div>
+    <div class="playback">
+      <button id="sem-pause" aria-label="暂停教学演示">Ⅱ</button>
+      <label class="teaching-speed"><span class="subtle" data-i18n="obs.teachingSpeed">演示速度</span><input id="sem-speed" type="range" min="0" max="5" step="0.1" value="1"><output id="sem-speed-val" for="sem-speed">1.0×</output></label>
+    </div>
+    <p class="subtle teaching-footer-note" data-i18n="obs.teachingClock">教学时间独立于太阳系 UTC；切换模式保留各自进度。</p>
+  </footer>
+  <div id="notice" role="status" aria-live="polite"></div>
+  <div id="loading"><span class="loading-orbit"></span><h2>准备观测</h2><p id="loading-text">正在载入星历与行星贴图…</p></div>
+
+  <script type="module" src="./system.js"></script>
+</body>
+</html>

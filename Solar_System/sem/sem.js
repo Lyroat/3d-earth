@@ -2,47 +2,53 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { t } from '../../i18n/lang.js';
+import { SEM_SCALE, SEASON_ANGLES, createTeachingState, advanceTeachingState, setTeachingSeason } from './model.js';
 
-export function init({ scene, camera, controls, renderer, TILT, resolution, allLineMats, lngLatToVec3 }) {
+// Scene-only API: no page IDs, global listeners, extra renderer, or animation loop.
+export function createSEM({ scene, camera, controls, textures, translate: t, resolution = new THREE.Vector2(1, 1) }) {
+  const TILT = THREE.MathUtils.degToRad(23.4);
+  const state = createTeachingState();
+  const allLineMats = [];
   const semGroup = new THREE.Group();
+  semGroup.name = 'sem-teaching';
   semGroup.visible = false;
   scene.add(semGroup);
-
-  let semMode = false;
-  let semSpeed = 1;
-  let semEarthYear = 0;
-  let semMoonMonth = 0;
-  let semShowLabels = true;
-  let semShowOrbits = true;
-  let semShowSunlight = true;
-  let viewMode = 'orbit';
-  let focusTarget = 'sun';
   const earthFocusOffset = new THREE.Vector3(0.8, 0.4, -0.8);
-
-  /* 日地月尺寸配置：太阳半径2.0、地球轨道半径18、地球半径0.35、月球轨道半径1.2、月球半径0.095 */
-  const SEM_SCALE = {
-    sunR: 2.0, earthOrbitR: 18, earthR: 0.35, moonOrbitR: 1.2, moonR: 0.095,
-  };
-
-  const texLoader = new THREE.TextureLoader();
+  function lngLatToVec3(lng, lat, r) {
+    const phi = (90 - lat) * Math.PI / 180, theta = (lng + 180) * Math.PI / 180;
+    return new THREE.Vector3(-r * Math.cos(theta) * Math.sin(phi), r * Math.cos(phi), r * Math.sin(theta) * Math.sin(phi));
+  }
 
   /* ======== Sun ======== */
   const sunGeo = new THREE.SphereGeometry(SEM_SCALE.sunR, 64, 64);
   const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // 太阳颜色（白色，加载贴图后被覆盖）
   const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+  sunMesh.name = 'sem-sun';
   semGroup.add(sunMesh);
 
-  texLoader.load('Solar_System/textures/sun.jpg', tex => {
-    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    sunMat.map = tex;
-    sunMat.needsUpdate = true;
-  });
+  sunMat.map = textures.Sun;
+  sunMat.needsUpdate = true;
 
   const sunGlowGeo = new THREE.SphereGeometry(SEM_SCALE.sunR * 1.25, 32, 32); // 太阳辉光球体大小（太阳的1.25倍）
   const sunGlowMat = new THREE.ShaderMaterial({
-    vertexShader: `varying vec3 vNorm;void main(){vNorm=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-    fragmentShader: `varying vec3 vNorm;void main(){float i=pow(0.65-dot(vNorm,vec3(0,0,1)),2.5);gl_FragColor=vec4(1.0,0.75,0.2,i*0.45);}`, // 辉光颜色（暖黄色），i*0.45 控制透明度
+    vertexShader: `
+      varying vec3 vNorm;
+      #include <common>
+      #include <logdepthbuf_pars_vertex>
+      void main(){
+        vNorm=normalize(normalMatrix*normal);
+        gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+        #include <logdepthbuf_vertex>
+      }`,
+    fragmentShader: `
+      varying vec3 vNorm;
+      #include <common>
+      #include <logdepthbuf_pars_fragment>
+      void main(){
+        #include <logdepthbuf_fragment>
+        float i=pow(max(0.,0.65-dot(vNorm,vec3(0,0,1))),2.5);
+        gl_FragColor=vec4(1.0,0.75,0.2,i*0.45);
+      }`, // 辉光颜色（暖黄色），i*0.45 控制透明度
     transparent: true, side: THREE.BackSide, depthWrite: false
   });
   semGroup.add(new THREE.Mesh(sunGlowGeo, sunGlowMat));
@@ -63,13 +69,11 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   const semEarthMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x000000, shininess: 15 }); // 地球表面光泽度15
   const semEarthMesh = new THREE.Mesh(semEarthGeo, semEarthMat);
   semEarthMesh.rotation.x = TILT;
+  semEarthMesh.name = 'sem-earth';
   earthTiltGroup.add(semEarthMesh);
 
-  texLoader.load('earth/main/earth.jpg', tex => {
-    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    semEarthMat.map = tex;
-    semEarthMat.needsUpdate = true;
-  });
+  semEarthMat.map = textures.Earth;
+  semEarthMat.needsUpdate = true;
 
   /* ======== Earth atmosphere glow ======== */
   // 用一层很薄的淡蓝色 Fresnel 辉光勾勒地球轮廓，让背向太阳的一侧
@@ -82,6 +86,8 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
         glowOpacity: { value: 0.46 },
       },
       vertexShader: `
+        #include <common>
+        #include <logdepthbuf_pars_vertex>
         varying vec3 vWorldNormal;
         varying vec3 vWorldPosition;
         void main() {
@@ -89,14 +95,18 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
           vWorldPosition = worldPosition.xyz;
           vWorldNormal = normalize(mat3(modelMatrix) * normal);
           gl_Position = projectionMatrix * viewMatrix * worldPosition;
+          #include <logdepthbuf_vertex>
         }
       `,
       fragmentShader: `
+        #include <common>
+        #include <logdepthbuf_pars_fragment>
         uniform vec3 glowColor;
         uniform float glowOpacity;
         varying vec3 vWorldNormal;
         varying vec3 vWorldPosition;
         void main() {
+          #include <logdepthbuf_fragment>
           vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
           float edge = 1.0 - abs(dot(normalize(vWorldNormal), viewDirection));
           float rim = pow(max(edge, 0.0), 2.4);
@@ -127,11 +137,8 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   semMoonMesh.rotation.y = Math.PI;
   moonOrbitPivot.add(semMoonMesh);
 
-  texLoader.load('Solar_System/textures/moon.jpg', tex => {
-    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    semMoonMat.map = tex;
-    semMoonMat.needsUpdate = true;
-  });
+  semMoonMat.map = textures.Moon;
+  semMoonMat.needsUpdate = true;
 
   /* ======== Orbit lines ======== */
   function makeOrbitRing(radius, color, parent, segments) {
@@ -154,6 +161,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   const axGeo = new THREE.CylinderGeometry(0.008, 0.008, SEM_SCALE.earthR * 2.8, 6); // 地轴线粗细0.008
   const axMesh = new THREE.Mesh(axGeo, new THREE.MeshBasicMaterial({ color: 0xff6666, transparent: true, opacity: 0.6 })); // 地轴线：红色，透明度0.6
   axMesh.rotation.x = TILT;
+  axMesh.name = 'sem-axis';
   earthTiltGroup.add(axMesh);
 
   /* ======== Latitude reference lines ======== */
@@ -161,6 +169,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   const latitudeGroup = new THREE.Group();
   latitudeGroup.renderOrder = 2;
   // 挂在地球网格本体上，确保标线与地球贴图同步自转。
+  latitudeGroup.name = 'sem-latitudes';
   semEarthMesh.add(latitudeGroup);
 
   function makeLatitudeRing(latitude, color, opacity, linewidth) {
@@ -245,9 +254,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     makeLatitudeLabel(definition);
   });
 
-  window.addEventListener('langchange', () => {
-    latitudeLabels.forEach(label => label.userData.updateText());
-  });
+
 
   /* ======== Labels ======== */
   function makeSEMLabel(text, color, size) {
@@ -271,30 +278,28 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     return sp;
   }
 
-  const semInfoLabels = [];
 
   /* ======== Solstice / Equinox markers ======== */
-  const seasonAngles = {
-    spring: 0,
-    summer: Math.PI / 2,
-    autumn: Math.PI,
-    winter: 3 * Math.PI / 2
-  };
+  const seasonAngles = SEASON_ANGLES;
   function getSeasonName(key) { const map={spring:'sem3d.spring',summer:'sem3d.summer',autumn:'sem3d.autumn',winter:'sem3d.winter'}; return t(map[key]); }
   const seasonColors = { spring: '#44cc66', summer: '#66aaff', autumn: '#cc8844', winter: '#ffaa22' }; // 分至点标记颜色
 
   const seasonMarkers = {};
   Object.entries(seasonAngles).forEach(([key, angle]) => {
     const x = SEM_SCALE.earthOrbitR * Math.cos(angle);
-    const z = SEM_SCALE.earthOrbitR * Math.sin(angle);
+    // Positive Three.js Y rotation places Earth at negative Z. Markers must
+    // use the same convention so a season's jump, label and switch agree.
+    const z = -SEM_SCALE.earthOrbitR * Math.sin(angle);
 
     const dotGeo = new THREE.SphereGeometry(0.18, 12, 12); // 分至点标记球体大小0.18
     const dotMat = new THREE.MeshBasicMaterial({ color: seasonColors[key] });
     const dot = new THREE.Mesh(dotGeo, dotMat);
+    dot.name = `sem-marker-${key}`;
     dot.position.set(x, 0, z);
     semGroup.add(dot);
 
     const lbl = makeSEMLabel(getSeasonName(key), seasonColors[key], 1.0); // 分至点标签大小1.0
+    lbl.name = `sem-marker-label-${key}`;
     lbl.position.set(x, 0.6, z); // 标签悬浮高度0.6
     semGroup.add(lbl);
 
@@ -347,6 +352,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     })
   );
   semEarthMesh.add(directPoint, directPointRing);
+  directPoint.name = 'sem-direct-point';
   const sunlightVisuals = [sunBeamOuter, sunBeamCore, directPoint, directPointRing];
 
   const worldEarthPos = new THREE.Vector3();
@@ -392,58 +398,12 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
     });
   }
 
-  window.addEventListener('langchange', () => {
-    Object.entries(seasonMarkers).forEach(([key, marker]) => marker.lbl.userData.setText(getSeasonName(key)));
-  });
-
-  /* ======== Toggle SEM mode ======== */
-  function toggleSEM(deps) {
-    semMode = !semMode;
-    semGroup.visible = semMode;
-    document.getElementById('tb-sem').classList.toggle('active', semMode);
-
-    if (semMode) {
-      deps.closeAllPanels();
-      if (deps.getInteriorMode()) deps.toggleInterior();
-      if (deps.getMagneticMode()) deps.toggleMagnetic();
-      deps.setActivePanel(null);
-
-      deps.earth.visible = false;
-      deps.boundaryGroup.visible = false;
-      deps.volcanoGroup.visible = false;
-      if(deps.earthquakeGroup) deps.earthquakeGroup.visible = false;
-      deps.gridGroup.visible = false;
-      deps.magneticGroup.visible = false;
-      deps.splitParent.visible = false;
-
-      deps.setAutoRotate(false);
-      deps.setManualPause(true);
-      document.getElementById('pause-btn').textContent = '\u25B6';
-
-      applyView('orbit');
-      document.getElementById('sem-panel').classList.add('show');
-    } else {
-      deps.earth.visible = true;
-
-      controls.target.set(0, 0, 0);
-      controls.minDistance = 2.0;
-      controls.maxDistance = 10;
-      camera.position.set(0, 0, 3);
-      camera.lookAt(0, 0, 0);
-      controls.update();
-      document.getElementById('sem-panel').classList.remove('show');
-      viewMode = 'orbit';
-    }
-  }
-
   /* ======== View modes ======== */
   function applyView(mode) {
-    viewMode = mode;
-    document.getElementById('sem-view-orbit').classList.toggle('active', mode === 'orbit');
-    document.getElementById('sem-view-rotate').classList.toggle('active', mode === 'rotate');
+    state.view = mode;
 
     if (mode === 'orbit') {
-      focusTarget = 'sun';
+      state.focus = 'sun';
       controls.target.set(0, 0, 0);
       controls.minDistance = 5;
       controls.maxDistance = 60;
@@ -451,7 +411,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
       camera.lookAt(0, 0, 0);
       controls.update();
     } else if (mode === 'rotate') {
-      focusTarget = 'earth';
+      state.focus = 'earth';
       controls.minDistance = 0.8;
       controls.maxDistance = 5;
       const ep = getEarthWorldPos();
@@ -463,9 +423,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   }
 
   function applyFocus(target) {
-    focusTarget = target;
-    document.getElementById('sem-focus-sun').classList.toggle('active', target === 'sun');
-    document.getElementById('sem-focus-earth').classList.toggle('active', target === 'earth');
+    state.focus = target;
 
     if (target === 'sun') {
       controls.target.set(0, 0, 0);
@@ -476,7 +434,7 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
       controls.update();
     } else if (target === 'earth') {
       controls.minDistance = 0.5;
-      if (viewMode === 'orbit') {
+      if (state.view === 'orbit') {
         // 地球中心的公转视角仍需允许拉远，才能看到太阳和完整轨道。
         controls.maxDistance = 60;
         setEarthFocusView();
@@ -518,120 +476,84 @@ export function init({ scene, camera, controls, renderer, TILT, resolution, allL
   }
 
   function moveToSeason(key) {
-    const angle = seasonAngles[key];
-    semEarthYear = angle;
-    semMoonMonth = angle * (365.25 / 27.32);
-    earthOrbitPivot.rotation.y = semEarthYear;
-    moonOrbitPivot.rotation.y = semMoonMonth;
-    if (focusTarget === 'earth' && viewMode === 'orbit') {
-      setEarthFocusView();
-    }
-    updateSunlightVisuals();
+    if (!setTeachingSeason(state, key)) return;
+    syncBodies();
+    // Seasonal jumps must keep Earth in view in rotation mode too, and must
+    // not discard a manually chosen zoom/orbit offset.
+    if (state.focus === 'earth') followEarthFocusView();
   }
 
-  /* ======== Update ======== */
-  function updateSEM(dt) {
-    if (!semMode) return;
-
-    if (viewMode === 'rotate') {
-      semEarthMesh.rotation.y += 0.01 * semSpeed; // 自转模式：地球自转速度
-    } else {
-      const earthAngularSpeed = 0.15 * semSpeed; // 公转模式：地球公转角速度
-      const moonAngularSpeed = earthAngularSpeed * (365.25 / 27.32);
-      semEarthYear += earthAngularSpeed * dt;
-      semMoonMonth += moonAngularSpeed * dt;
-      earthOrbitPivot.rotation.y = semEarthYear;
-      semEarthMesh.rotation.y += 0.02 * semSpeed; // 公转模式：地球自转速度
-      moonOrbitPivot.rotation.y = semMoonMonth;
-    }
-
-    earthTiltGroup.rotation.y = -earthOrbitPivot.rotation.y;
-
-    sunMesh.rotation.y += 0.002 * semSpeed; // 太阳自转速度
-
-    if (focusTarget === 'earth' && viewMode !== 'rotate') {
-      followEarthFocusView();
-    }
-
-    Object.values(seasonMarkers).forEach(m => { m.lbl.visible = semShowLabels; });
-    latitudeGroup.visible = semShowLabels;
-    latitudeLabels.forEach(label => { label.visible = semShowLabels; });
-    sunlightVisuals.forEach(object => { object.visible = semShowSunlight; });
-    updateSunlightVisuals();
-    earthOrbitLine.visible = semShowOrbits;
-    moonOrbitLine.visible = semShowOrbits;
-  }
-
-  /* ======== Controls ======== */
-  (function initSEMControls() {
-    const speedSlider = document.getElementById('sem-speed');
-    const speedVal = document.getElementById('sem-speed-val');
-    if (speedSlider) {
-      speedSlider.addEventListener('input', () => {
-        semSpeed = parseFloat(speedSlider.value);
-        speedVal.textContent = semSpeed.toFixed(1) + '\u00d7';
-      });
-    }
-
-    const toggleLabelsBtn = document.getElementById('sem-toggle-labels');
-    if (toggleLabelsBtn) {
-      toggleLabelsBtn.classList.add('active');
-      toggleLabelsBtn.addEventListener('click', () => {
-        semShowLabels = !semShowLabels;
-        toggleLabelsBtn.classList.toggle('active', semShowLabels);
-      });
-    }
-
-    const toggleOrbitsBtn = document.getElementById('sem-toggle-orbits');
-    if (toggleOrbitsBtn) {
-      toggleOrbitsBtn.classList.add('active');
-      toggleOrbitsBtn.addEventListener('click', () => {
-        semShowOrbits = !semShowOrbits;
-        toggleOrbitsBtn.classList.toggle('active', semShowOrbits);
-      });
-    }
-
-    const toggleSunlightBtn = document.getElementById('sem-toggle-sunlight');
-    if (toggleSunlightBtn) {
-      toggleSunlightBtn.classList.add('active');
-      toggleSunlightBtn.addEventListener('click', () => {
-        semShowSunlight = !semShowSunlight;
-        toggleSunlightBtn.classList.toggle('active', semShowSunlight);
-        sunlightVisuals.forEach(object => { object.visible = semShowSunlight; });
-      });
-    }
-
-    let semPaused = false;
-    const semPauseBtn = document.getElementById('sem-pause');
-    if (semPauseBtn) {
-      semPauseBtn.addEventListener('click', () => {
-        semPaused = !semPaused;
-        semSpeed = semPaused ? 0 : parseFloat(speedSlider.value);
-        semPauseBtn.textContent = semPaused ? t('sem.resume') : t('sem.pause');
-        semPauseBtn.classList.toggle('active', semPaused);
-      });
-    }
-
-    const viewOrbitBtn = document.getElementById('sem-view-orbit');
-    const viewRotateBtn = document.getElementById('sem-view-rotate');
-    if (viewOrbitBtn) viewOrbitBtn.addEventListener('click', () => applyView('orbit'));
-    if (viewRotateBtn) viewRotateBtn.addEventListener('click', () => applyView('rotate'));
-
-    const focusSunBtn = document.getElementById('sem-focus-sun');
-    const focusEarthBtn = document.getElementById('sem-focus-earth');
-    if (focusSunBtn) focusSunBtn.addEventListener('click', () => applyFocus('sun'));
-    if (focusEarthBtn) focusEarthBtn.addEventListener('click', () => applyFocus('earth'));
-
-    Object.keys(seasonAngles).forEach(key => {
-      const btn = document.getElementById('sem-' + key);
-      if (btn) btn.addEventListener('click', () => moveToSeason(key));
+  function syncBodies() {
+    earthOrbitPivot.rotation.y = state.year;
+    earthTiltGroup.rotation.y = -state.year;
+    moonOrbitPivot.rotation.y = state.month;
+    semEarthMesh.rotation.y = state.spin;
+    sunMesh.rotation.y = state.sunSpin;
+    Object.entries(seasonMarkers).forEach(([key, marker]) => {
+      marker.dot.visible = state.showSeasons[key];
+      marker.lbl.visible = state.showSeasons[key] && state.showLabels;
     });
-  })();
+    latitudeGroup.visible = state.showLabels;
+    sunlightVisuals.forEach(object => { object.visible = state.showSunlight; });
+    earthOrbitLine.visible = moonOrbitLine.visible = state.showOrbits;
+    semGroup.updateMatrixWorld(true);
+    updateSunlightVisuals();
+  }
 
+  function update(dt) {
+    if (!state.active) return;
+    advanceTeachingState(state, dt);
+    syncBodies();
+    if (state.focus === 'earth' && state.view !== 'rotate') followEarthFocusView();
+  }
+
+  let initialized = false;
   return {
-    semGroup,
-    get semMode() { return semMode; },
-    toggleSEM,
-    updateSEM,
+    group: semGroup,
+    getState: () => ({ ...state, showSeasons: { ...state.showSeasons } }),
+    activate() {
+      state.active = true;
+      semGroup.visible = true;
+      syncBodies();
+      if (!initialized) {
+        camera.near = 0.01; camera.far = 1000; camera.zoom = 1; camera.fov = 42;
+        camera.updateProjectionMatrix();
+        applyView('orbit');
+        initialized = true;
+      }
+    },
+    deactivate() { state.active = false; semGroup.visible = false; },
+    applyView, applyFocus, moveToSeason, update,
+    setSpeed(value) { if (Number.isFinite(value)) state.speed = THREE.MathUtils.clamp(value, 0, 5); },
+    setRunning(value) { state.running = Boolean(value); },
+    setLabels(value) { state.showLabels = Boolean(value); syncBodies(); },
+    setOrbits(value) { state.showOrbits = Boolean(value); syncBodies(); },
+    setSunlight(value) { state.showSunlight = Boolean(value); syncBodies(); },
+    setSeasonVisible(key, value) {
+      if (!Object.prototype.hasOwnProperty.call(SEASON_ANGLES, key)) return;
+      state.showSeasons[key] = Boolean(value);
+      syncBodies();
+    },
+    resize(width, height) { allLineMats.forEach(material => material.resolution.set(width, height)); },
+    refreshLabels() {
+      latitudeLabels.forEach(label => label.userData.updateText());
+      Object.entries(seasonMarkers).forEach(([key, marker]) => marker.lbl.userData.setText(getSeasonName(key)));
+    },
+    dispose() {
+      state.active = false;
+      scene.remove(semGroup);
+      const geometries = new Set(), materials = new Set(), canvasTextures = new Set();
+      semGroup.traverse(object => {
+        if (object.geometry) geometries.add(object.geometry);
+        for (const material of [object.material].flat().filter(Boolean)) {
+          materials.add(material);
+          if (material.map?.isCanvasTexture) canvasTextures.add(material.map);
+        }
+      });
+      geometries.forEach(resource => resource.dispose());
+      materials.forEach(resource => resource.dispose());
+      canvasTextures.forEach(resource => resource.dispose());
+      // Shared solar-system textures are owned by the host, never disposed here.
+    },
   };
 }

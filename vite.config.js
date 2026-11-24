@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
 ];
 
 export default defineConfig({
+  base: './',
   publicDir: false,
   build: {
     target: 'es2020',
@@ -29,6 +30,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         admin: resolve(import.meta.dirname, 'admin.html'),
+        solarSystem: resolve(import.meta.dirname, 'Solar_System/system/index.html'),
       },
       output: {
         entryFileNames: 'assets/[hash].js',

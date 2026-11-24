@@ -102,17 +102,6 @@ canvas{display:block}
 .sp-search #search-results{position:absolute;top:calc(100% + 4px);left:0;right:0;max-height:180px;overflow-y:auto;background:rgba(8,8,18,.95);backdrop-filter:blur(14px);border-radius:10px;border:1px solid rgba(255,255,255,.12);display:none;z-index:55;padding:4px 0}
 #split-section #split-btn{width:100%;box-sizing:border-box;text-align:center}
 
-/* ── Sun-Earth-Moon Panel 日-地-月系统面板 ── */
-.sem-control{display:flex;align-items:center;gap:8px;padding:4px 0}
-.sem-label{font-size:11px;color:rgba(255,255,255,.5);min-width:28px}
-.sem-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,.15);outline:none}
-.sem-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#4fc3f7;cursor:pointer}
-.sem-val{font-size:11px;color:rgba(255,255,255,.6);min-width:24px;text-align:right}
-.sem-info{display:flex;flex-direction:column;gap:4px;padding:4px 0}
-.sem-info-item{font-size:11px;color:rgba(255,255,255,.55);line-height:1.6}
-#sem-panel{min-width:200px}
-#sem-panel .chip{font-size:11px;padding:4px 10px}
-.sem-slider-short{max-width:66%}
 #earth-panel{min-width:180px;max-width:220px} /* 地球面板宽度：180~220px */
 #earth-panel .chip{width:100%;justify-content:flex-start;box-sizing:border-box}
 .ep-explore-btn{margin-bottom:2px}
@@ -124,11 +113,6 @@ canvas{display:block}
 #knowledge-card{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;background:rgba(8,8,18,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;width:300px;max-height:80vh;overflow-y:auto} /* 右侧知识卡片：宽300px、毛玻璃背景 */
 #knowledge-card.show{display:flex;flex-direction:column;gap:8px}
 
-/* ── SEM Stacking Cards SEM科普卡片堆叠 ── */
-#sem-kc-stack{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:none;z-index:15;pointer-events:auto;width:300px;max-height:80vh;overflow-y:auto;flex-direction:column;gap:10px} /* SEM科普卡片堆叠容器：右侧、宽300px */
-#sem-kc-stack.show{display:flex}
-.sem-kc-card{background:rgba(8,8,18,.88);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;position:relative;display:flex;flex-direction:column;gap:6px}
-.sem-kc-card .kc-close{position:absolute;top:6px;right:8px}
 .kc-title{font-size:14px;font-weight:600;color:rgba(255,255,255,.9)}
 .kc-desc{font-size:12px;line-height:1.7;color:rgba(255,255,255,.75)}
 .kc-desc p{margin:0 0 6px}

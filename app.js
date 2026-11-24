@@ -5,7 +5,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { init as initEarth, lngLatToVec3 } from './earth/main/earth.js';
 import { init as initMagnetic } from './earth/earth_function/magnetic/magnetic.js';
-import { init as initSEM } from './Solar_System/sem/sem.js';
 import { init as initPlates } from './earth/earth_function/plates/plates.js';
 import { init as initSplit } from './earth/earth_function/plates/split.js';
 import { init as initVolcanoes } from './earth/earth_function/volcanoes/volcanoes.js';
@@ -16,6 +15,7 @@ import { loadApprovedPhotos, initUploadModal } from './photos/photos.js';
 /* ══════════ Scene — 场景、相机、渲染器初始化 ══════════ */
 const TILT = THREE.MathUtils.degToRad(23.4); // 地轴倾斜角度（度）
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x060a10);
 const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000); // 45=视场角，越大视野越广
 camera.position.set(0, 0, 3); // 初始相机距离，值越大地球越小
 const renderer = new THREE.WebGLRenderer({antialias:true});
@@ -39,7 +39,6 @@ const ctx = { scene, camera, controls, renderer, TILT, resolution, allLineMats, 
 let autoRotate = true, manualPause = false, idleTimer;
 let activePanel = null;
 let navAnim = null, savedView = null;
-let currentMode = 'earth';
 
 /* ══════════ Knowledge Card ══════════ */
 const kcCard = document.getElementById('knowledge-card');
@@ -81,10 +80,8 @@ function toggleMagnetic(){
   }
 }
 
-const semMod = initSEM(ctx);
 
 function closeAllPanels(){
-  document.getElementById('sem-panel').classList.remove('show');
   document.getElementById('earth-panel').classList.remove('show');
   kcCard.classList.remove('show');
 }
@@ -123,58 +120,6 @@ function autoMergeSplit(){
   if(!split) return;
   if(split.splitActive) split.toggleSplit();
   split.forceComplete(earthMat);
-}
-
-/* ══════════ SEM stacking cards ══════════ */
-const semKcStack = document.getElementById('sem-kc-stack');
-const activeSemCards = new Map();
-const SEM_SEASON_BTNS = ['sem-spring','sem-summer','sem-autumn','sem-winter'];
-const SEM_VIEW_BTNS = ['sem-view-orbit','sem-view-rotate'];
-
-function removeSemKC(btnId){
-  if(!activeSemCards.has(btnId)) return;
-  const card = activeSemCards.get(btnId);
-  card.remove();
-  activeSemCards.delete(btnId);
-  if(SEM_SEASON_BTNS.includes(btnId)){
-    document.getElementById(btnId).classList.remove('active');
-  }
-}
-
-function toggleSemKC(btnId, data){
-  if(activeSemCards.has(btnId)){
-    removeSemKC(btnId);
-  } else {
-    if(SEM_SEASON_BTNS.includes(btnId)){
-      SEM_SEASON_BTNS.forEach(id => { if(id !== btnId) removeSemKC(id); });
-    }
-    if(SEM_VIEW_BTNS.includes(btnId)){
-      SEM_VIEW_BTNS.forEach(id => { if(id !== btnId) removeSemKC(id); });
-    }
-    const card = document.createElement('div');
-    card.className = 'sem-kc-card';
-    const imgHtml = data.img ? `<img class="kc-img" src="${data.img}" />` : '';
-    card.innerHTML = `<button class="kc-close">&times;</button><div class="kc-title">${data.title}</div><div class="kc-desc">${data.desc}</div>${imgHtml}`;
-    card.querySelector('.kc-close').addEventListener('click', () => toggleSemKC(btnId, data));
-    semKcStack.appendChild(card);
-    activeSemCards.set(btnId, card);
-    if(SEM_SEASON_BTNS.includes(btnId)){
-      document.getElementById(btnId).classList.add('active');
-    }
-  }
-  semKcStack.classList.toggle('show', activeSemCards.size > 0);
-}
-
-function clearAllSemKC(){
-  activeSemCards.forEach((card, btnId) => {
-    card.remove();
-    if(SEM_SEASON_BTNS.includes(btnId)){
-      const btn = document.getElementById(btnId);
-      if(btn) btn.classList.remove('active');
-    }
-  });
-  activeSemCards.clear();
-  semKcStack.classList.remove('show');
 }
 
 /* Navigation */
@@ -267,72 +212,10 @@ let boundaryGroup, volcanoGroup, earthquakeGroup, plates, split, volcano, earthq
   earthquakeGroup.visible = false;
   gridGroup.visible = false;
 
-  /* Wire up SEM deps */
-  const semToggleDeps = {
-    closeAllPanels,
-    getInteriorMode: () => interior.interiorMode,
-    getMagneticMode: () => magneticMode,
-    toggleInterior: () => interior.toggleInterior(),
-    toggleMagnetic,
-    setActivePanel: (v) => { activePanel = v; },
-    earth, boundaryGroup, volcanoGroup: volcano.volcanoGroup,
-    earthquakeGroup: earthquake.earthquakeGroup,
-    gridGroup, magneticGroup,
-    splitParent: split.splitParent,
-    setAutoRotate: (v) => { autoRotate = v; },
-    setManualPause: (v) => { manualPause = v; },
-  };
-
-  /* ══════════ Mode switching ══════════ */
-  function enterEarthMode(){
-    autoMergeSplit();
-    resetEarthState();
-
-    if(currentMode === 'sem'){
-      clearAllSemKC();
-      if(semMod.semMode) semMod.toggleSEM(semToggleDeps);
-      document.getElementById('tb-sem').classList.remove('active');
-      earth.visible = true;
-      controls.target.set(0,0,0);
-      controls.minDistance = 2.0;
-      controls.maxDistance = 10;
-      camera.position.set(0,0,3);
-      camera.lookAt(0,0,0);
-      controls.update();
-    }
-
-    currentMode = 'earth';
-    document.getElementById('tb-earth').classList.add('active');
+  // Day–Earth–Moon teaching now lives at Solar_System/system/#sem.
+  document.getElementById('tb-earth').addEventListener('click', () => {
     document.getElementById('earth-panel').classList.add('show');
-  }
-
-  function enterSEMMode(){
-    if(currentMode === 'sem'){
-      const sp = document.getElementById('sem-panel');
-      if(sp.classList.contains('show')){
-        sp.classList.remove('show');
-        document.getElementById('tb-sem').classList.remove('active');
-      } else {
-        sp.classList.add('show');
-        document.getElementById('tb-sem').classList.add('active');
-      }
-      return;
-    }
-    autoMergeSplit();
-    resetEarthState();
-    document.getElementById('earth-panel').classList.remove('show');
-    document.getElementById('tb-earth').classList.remove('active');
-    currentMode = 'sem';
-    if(magneticMode) toggleMagnetic();
-    if(interior.interiorMode) interior.toggleInterior();
-    closeAllPanels();
-    hideKC();
-    semMod.toggleSEM(semToggleDeps);
-    document.getElementById('tb-sem').classList.add('active');
-  }
-
-  document.getElementById('tb-earth').addEventListener('click', enterEarthMode);
-  document.getElementById('tb-sem').addEventListener('click', enterSEMMode);
+  });
 
   /* ══════════ 内容显示 section (simple toggles) ══════════ */
   document.getElementById('ep-terrain').addEventListener('click', () => {
@@ -444,38 +327,12 @@ let boundaryGroup, volcanoGroup, earthquakeGroup, plates, split, volcano, earthq
   document.getElementById('ep-interior').addEventListener('click', () => openExplore('interior'));
   document.getElementById('ep-magnetic').addEventListener('click', () => openExplore('magnetic'));
 
-  /* ══════════ SEM science cards ══════════ */
-  function getSemScienceData() {
-    return {
-      'sem-view-orbit': { title: t('kc.sem-orbit.title'), desc: t('kc.sem-orbit.desc') },
-      'sem-view-rotate': { title: t('kc.sem-rotate.title'), desc: t('kc.sem-rotate.desc') },
-      'sem-spring': { title: t('kc.sem-spring.title'), desc: t('kc.sem-spring.desc') },
-      'sem-summer': { title: t('kc.sem-summer.title'), desc: t('kc.sem-summer.desc') },
-      'sem-autumn': { title: t('kc.sem-autumn.title'), desc: t('kc.sem-autumn.desc') },
-      'sem-winter': { title: t('kc.sem-winter.title'), desc: t('kc.sem-winter.desc') },
-    };
-  }
-
-  Object.keys(getSemScienceData()).forEach(btnId => {
-    const btn = document.getElementById(btnId);
-    if(btn) {
-      btn.addEventListener('click', () => toggleSemKC(btnId, getSemScienceData()[btnId]));
-    }
-  });
-
   /* ══════════ Pause / Reset ══════════ */
   document.getElementById('reset-view-btn').addEventListener('click', () => {
-    if(currentMode === 'sem'){
-      clearAllSemKC();
-      semMod.toggleSEM(semToggleDeps);
-      currentMode = 'earth';
-      document.getElementById('tb-sem').classList.remove('active');
-    }
     autoMergeSplit();
     resetEarthState();
     volcano.deselectVolcano();
-    document.getElementById('earth-panel').classList.remove('show');
-    document.getElementById('tb-earth').classList.remove('active');
+    document.getElementById('earth-panel').classList.add('show');
     earth.visible = true;
     earth.rotation.y=0;syncRotY();
     camera.position.set(0,0,3);camera.lookAt(controls.target);
@@ -486,7 +343,6 @@ let boundaryGroup, volcanoGroup, earthquakeGroup, plates, split, volcano, earthq
     autoRotate=true;manualPause=false;pauseBtn.textContent='⏸';
   });
   document.getElementById('reset-pos-btn').addEventListener('click', () => {
-    if(currentMode === 'sem') return;
     earth.rotation.y=0;syncRotY();
     camera.position.set(0,0,3);camera.lookAt(controls.target);
     controls.target.set(0,0,0);
@@ -507,7 +363,6 @@ let boundaryGroup, volcanoGroup, earthquakeGroup, plates, split, volcano, earthq
   renderer.domElement.addEventListener('dblclick', e => {
     e.preventDefault();
     if(interior.interiorMode) return;
-    if(currentMode === 'sem') return;
     const mx=(e.clientX/innerWidth)*2-1,my=-(e.clientY/innerHeight)*2+1;
     const rc=new THREE.Raycaster();
     rc.setFromCamera(new THREE.Vector2(mx,my),camera);
@@ -568,7 +423,7 @@ let boundaryGroup, volcanoGroup, earthquakeGroup, plates, split, volcano, earthq
       camera.position.setFromSpherical(sph);camera.lookAt(controls.target);
       if(done){navAnim=null;controls.enabled=true;controls.update();}
     } else {
-      if(autoRotate && !interior.interiorMode && currentMode==='earth'){earth.rotation.y+=0.001;syncRotY();} // 0.001=地球自转速度（弧度/帧）
+      if(autoRotate && !interior.interiorMode){earth.rotation.y+=0.001;syncRotY();} // 0.001=地球自转速度（弧度/帧）
       controls.update();
     }
 
@@ -577,7 +432,6 @@ let boundaryGroup, volcanoGroup, earthquakeGroup, plates, split, volcano, earthq
     volcano.updatePinned();
     earthquake.updatePulse(t);
     interior.updateTime(t);
-    semMod.updateSEM(0.016);
     earthMat.uniforms.uCam.value.copy(camera.position);
     renderer.render(scene, camera);
   })();

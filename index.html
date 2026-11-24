@@ -4,25 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>三维地球 — 板块构造与火山</title>
+<meta name="theme-color" content="#060a10">
+<link rel="stylesheet" href="ui/theme.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="ui/earth-ui.css">
 </head>
 <body>
 <div id="loading"><div class="spinner"></div></div>
 
-<!-- ══ 底部按钮栏：恢复/暂停/模式切换 ══ -->
-<div id="bottom-bar">
-  <button class="tb-btn" id="reset-view-btn" title="恢复初始状态" data-i18n="ui.resetView" data-i18n-title="ui.resetViewTitle">↺ 恢复初始</button>
-  <button class="tb-btn" id="reset-pos-btn" title="位置复原" data-i18n="ui.resetPos" data-i18n-title="ui.resetPosTitle">⊙ 位置复原</button>
+<header class="obs-header">
+  <div class="obs-brand"><span class="obs-symbol">◎</span><div><h1 data-i18n="obs.earthTitle">地球</h1><p>EARTH OBSERVATORY</p></div></div>
+  <nav class="obs-nav" aria-label="探索主题">
+    <button id="tb-earth" aria-current="page" data-i18n="obs.earthExplore">地球探索</button>
+    <a href="Solar_System/system/" data-i18n="obs.solar">太阳系观测</a>
+  </nav>
+  <button id="lang-toggle" class="obs-lang" data-i18n="lang.toggle">EN</button>
+</header>
+<footer id="bottom-bar">
+  <div class="earth-footer-label"><strong data-i18n="obs.earthExplore">地球探索</strong><span data-i18n="obs.earthHint">拖拽旋转 · 滚轮缩放 · 双击放大</span></div>
   <button id="pause-btn" title="暂停/继续自转" data-i18n-title="ui.pauseTitle">⏸</button>
-  <button class="tb-btn" id="tb-earth" data-i18n="ui.earth">🌏 地球</button>
-  <button class="tb-btn" id="tb-sem" data-i18n="ui.sem">☀️ 日-地-月系统</button>
-</div>
+  <button class="tb-btn" id="reset-pos-btn" title="位置复原" data-i18n="ui.resetPos" data-i18n-title="ui.resetPosTitle">⊙ 位置复原</button>
+  <button class="tb-btn" id="reset-view-btn" title="恢复初始状态" data-i18n="ui.resetView" data-i18n-title="ui.resetViewTitle">↺ 恢复初始</button>
+</footer>
 
 <div id="tooltip"></div>
 <div id="cluster-popup"></div>
 
 <!-- ══ 地球面板（含内容显示 + 地球探索 + 内嵌子面板）══ -->
-<div class="side-panel" id="earth-panel">
+<div class="side-panel show" id="earth-panel">
   <!-- 内容显示 -->
   <div class="sp-section">
     <div class="sp-title" data-i18n="ui.display">内容显示</div>
@@ -95,8 +104,6 @@
   <img class="kc-img" id="kc-img" />
 </div>
 
-<!-- ══ SEM 科普卡片堆叠容器 ══ -->
-<div id="sem-kc-stack"></div>
 
 <!-- ══ 火山照片上传触发按钮 ══ -->
 <button id="upload-trigger" data-i18n="ui.uploadPhoto">📸 上传照片</button>
@@ -124,60 +131,12 @@
   </div>
 </div>
 
-<!-- ══ 日-地-月系统面板 ══ -->
-<div class="side-panel" id="sem-panel">
-  <div class="sp-section">
-    <div class="sp-title" data-i18n="sem.title">日-地-月系统</div>
-    <div class="sem-control">
-      <label class="sem-label" data-i18n="sem.speed">速度</label>
-      <span id="sem-speed-val" class="sem-val">1.0×</span>
-      <button class="chip" id="sem-pause" data-i18n="sem.pause">⏸ 暂停</button>
-    </div>
-    <div class="sem-control">
-      <input type="range" id="sem-speed" min="0" max="5" step="0.1" value="1" class="sem-slider sem-slider-short" />
-    </div>
-  </div>
-  <div class="sp-section">
-    <div class="sp-title" data-i18n="sem.viewMode">观察模式</div>
-    <div class="sem-control">
-      <button class="chip" id="sem-view-orbit" data-i18n="sem.revolution">🌏 公转</button>
-      <button class="chip" id="sem-view-rotate" data-i18n="sem.rotation">🔄 自转</button>
-    </div>
-    <div class="sem-control">
-      <button class="chip" id="sem-focus-sun" data-i18n="sem.sunCenter">☀️ 太阳中心</button>
-      <button class="chip" id="sem-focus-earth" data-i18n="sem.earthCenter">🌍 地球中心</button>
-    </div>
-  </div>
-  <div class="sp-section">
-    <div class="sp-title" data-i18n="sem.solsticeEquinox">分至点位</div>
-    <div class="sem-control">
-      <button class="chip" id="sem-spring" data-i18n="sem.spring">🌱 北分点</button>
-      <button class="chip" id="sem-summer" data-i18n="sem.summer">☀️ 北至点</button>
-    </div>
-    <div class="sem-control">
-      <button class="chip" id="sem-autumn" data-i18n="sem.autumn">🍂 南分点</button>
-      <button class="chip" id="sem-winter" data-i18n="sem.winter">❄️ 南至点</button>
-    </div>
-  </div>
-  <div class="sp-section">
-    <div class="sp-title" data-i18n="sem.labelsOrbits">标注与轨道</div>
-    <div class="sem-control">
-      <button class="chip" id="sem-toggle-labels" data-i18n="sem.labels">🏷 标注</button>
-      <button class="chip" id="sem-toggle-orbits" data-i18n="sem.orbits">⭕ 轨道线</button>
-    </div>
-    <div class="sem-control">
-      <button class="chip" id="sem-toggle-sunlight" data-i18n="sem.sunlight">☀️ 阳光直射</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ 照片灯箱（全屏查看） ══ -->
 <div id="photo-lightbox">
   <button id="lightbox-close">&times;</button>
   <img id="lightbox-img" />
 </div>
 
-<button id="lang-toggle" data-i18n="lang.toggle">EN</button>
 <script type="module" src="app.js"></script>
 </body>
 </html>

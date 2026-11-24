@@ -1,14 +1,17 @@
 {
   "name": "3d-earth",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:solar": "node --test Solar_System/system/system.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
+    "astronomy-engine": "2.1.19",
     "cropperjs": "^1.6.2",
     "three": "0.164.1"
   },
