@@ -66,13 +66,19 @@ export function createSEM({ scene, camera, controls, textures, translate: t, res
   earthOrbitPivot.add(earthTiltGroup);
 
   const semEarthGeo = new THREE.SphereGeometry(SEM_SCALE.earthR, 48, 48);
-  const semEarthMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x000000, shininess: 15 }); // 地球表面光泽度15
+  // Gentle, texture-matched teaching fill reveals the dark terrain without
+  // washing out its colours or changing sunlight / lighting on other bodies.
+  // Keep Phong sunlight shading so the day/night boundary remains visible.
+  const semEarthMat = new THREE.MeshPhongMaterial({
+    color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.1, shininess: 15,
+  });
   const semEarthMesh = new THREE.Mesh(semEarthGeo, semEarthMat);
   semEarthMesh.rotation.x = TILT;
   semEarthMesh.name = 'sem-earth';
   earthTiltGroup.add(semEarthMesh);
 
   semEarthMat.map = textures.Earth;
+  semEarthMat.emissiveMap = textures.Earth;
   semEarthMat.needsUpdate = true;
 
   /* ======== Earth atmosphere glow ======== */

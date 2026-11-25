@@ -576,6 +576,51 @@ function teachingFixture() {
     else globalThis.document = previous;
   }
 }
+test('SEM brightens only Earth with gentle texture-matched fill while retaining sunlight shading', () => {
+  const { scene, textures, model } = teachingFixture();
+  try {
+    model.activate();
+    const earth = scene.getObjectByName('sem-earth');
+    assert.equal(earth.material.isMeshPhongMaterial, true, 'Keep directional day/night shading');
+    assert.equal(earth.material.map, textures.Earth);
+    assert.equal(earth.material.emissiveMap, textures.Earth, 'Fill must preserve the surface texture');
+    assert.equal(earth.material.color.getHex(), 0xffffff);
+    assert.equal(earth.material.emissive.getHex(), 0xffffff, 'Neutral fill must not tint the terrain');
+    close(earth.material.emissiveIntensity, 0.1);
+    assert.ok(earth.material.emissiveIntensity < 0.15, 'Night-side fill stays subtle');
+
+    const lights = [], moonMeshes = [];
+    scene.traverse(object => {
+      if (object.isLight) lights.push(object);
+      if (object.isMesh && object.material.map === textures.Moon) moonMeshes.push(object);
+    });
+    assert.equal(lights.length, 2, 'No global lights added or exposure changes');
+    const sunlight = lights.find(light => light.isPointLight);
+    assert.equal(sunlight.intensity, 800);
+    assert.equal(sunlight.decay, 2);
+    assert.equal(sunlight.color.getHex(), 0xfffbe8);
+    assert.deepEqual(sunlight.position.toArray(), [0, 0, 0]);
+    assert.equal(moonMeshes.length, 1);
+    assert.equal(moonMeshes[0].material.emissive.getHex(), 0x000000);
+    assert.equal(moonMeshes[0].material.emissiveMap, null);
+    assert.equal(scene.getObjectByName('sem-sun').material.isMeshBasicMaterial, true);
+    assert.equal(scene.getObjectByName('sem-sun').material.map, textures.Sun);
+
+    const textureVersion = textures.Earth.version;
+    for (const season of Object.keys(SEASON_ANGLES)) {
+      model.moveToSeason(season);
+      model.applyFocus('earth');
+      model.update(0.1);
+      model.deactivate();
+      model.activate();
+      assert.equal(earth.material.emissiveMap, textures.Earth);
+      close(earth.material.emissiveIntensity, 0.1);
+    }
+    assert.equal(textures.Earth.version, textureVersion, 'Never modify the shared solar-system texture');
+  } finally {
+    model.dispose();
+  }
+});
 test('teaching scene retains fixed Earth axis and manual orbit/zoom offset while following revolution', () => {
   const { scene, camera, controls, model } = teachingFixture();
   model.activate(); model.applyFocus('earth');
